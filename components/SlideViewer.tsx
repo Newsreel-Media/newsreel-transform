@@ -224,16 +224,8 @@ export default function SlideViewer({ story }: { story: Story }) {
 
   return (
     <div className="relative w-full max-w-[393px] mx-auto" style={{ height: "min(852px, 100dvh)" }}>
-      {/* Progress bar at very top */}
-      <div className="absolute top-0 left-0 right-0 z-40 h-[3px] bg-white/10">
-        <div
-          className="h-full bg-nr-red transition-all duration-300 ease-out"
-          style={{ width: `${progressPercent}%` }}
-        />
-      </div>
-
-      {/* Progress dots */}
-      <div className="absolute top-[6px] left-0 right-0 z-30 flex gap-1 px-3 pt-1">
+      {/* Progress segments (Instagram Stories style) */}
+      <div className="absolute top-0 left-0 right-0 z-40 flex gap-1 px-3 pt-2">
         {pages.map((_, i) => (
           <div
             key={i}
