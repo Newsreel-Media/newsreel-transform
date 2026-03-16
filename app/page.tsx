@@ -3,6 +3,21 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 
+const EXAMPLE_URLS = [
+  {
+    label: "Oberlin Review article",
+    url: "https://oberlinreview.org/35029/news/campus-dining-workers-negotiate-new-contract/",
+  },
+  {
+    label: "BBC Technology",
+    url: "https://www.bbc.com/news/technology-67988517",
+  },
+  {
+    label: "Wikipedia AI article",
+    url: "https://en.wikipedia.org/wiki/Artificial_intelligence",
+  },
+]
+
 export default function Home() {
   const [url, setUrl] = useState("")
   const router = useRouter()
@@ -42,7 +57,7 @@ export default function Home() {
         </p>
 
         {/* URL Input */}
-        <form onSubmit={handleTransform} className="flex gap-3 max-w-xl mx-auto mb-8">
+        <form onSubmit={handleTransform} className="flex gap-3 max-w-xl mx-auto mb-6">
           <input
             type="url"
             value={url}
@@ -58,6 +73,22 @@ export default function Home() {
             Transform
           </button>
         </form>
+
+        {/* Example URLs */}
+        <div className="flex flex-wrap items-center justify-center gap-3 max-w-xl mx-auto mb-10">
+          {EXAMPLE_URLS.map((example) => (
+            <button
+              key={example.label}
+              onClick={() => {
+                setUrl(example.url)
+                router.push(`/transform?url=${encodeURIComponent(example.url)}`)
+              }}
+              className="font-mono text-xs text-nr-gray-400 hover:text-nr-red border border-white/10 hover:border-nr-red/30 rounded-full px-4 py-2 transition-all"
+            >
+              Try: {example.label}
+            </button>
+          ))}
+        </div>
 
         {/* Bookmarklet */}
         <div className="bg-nr-gray-900 border border-white/10 rounded-2xl p-6 max-w-xl mx-auto">
@@ -84,13 +115,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Example / How it works */}
-      <section className="max-w-4xl mx-auto px-6 pb-24">
+      {/* How it works */}
+      <section className="max-w-4xl mx-auto px-6 pb-16">
+        <h2 className="font-heading text-2xl text-white text-center mb-8">How it works</h2>
         <div className="grid md:grid-cols-3 gap-6">
           {[
-            { step: "01", title: "Paste a URL", desc: "Drop in any news article link" },
-            { step: "02", title: "AI transforms", desc: "Claude extracts and rewrites as slides" },
-            { step: "03", title: "Swipe through", desc: "Interactive, mobile-first story" },
+            { step: "01", title: "Paste any article URL", desc: "Drop in a link from any news site, blog, or Wikipedia page" },
+            { step: "02", title: "AI transforms it", desc: "Claude reads, extracts, and rewrites the article as interactive slides" },
+            { step: "03", title: "Embed or share the link", desc: "Get an embed code for your site or share the direct link anywhere" },
           ].map((item) => (
             <div key={item.step} className="bg-nr-gray-900 border border-white/10 rounded-2xl p-6">
               <span className="font-mono text-nr-red text-sm">{item.step}</span>

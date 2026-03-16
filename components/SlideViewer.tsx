@@ -29,9 +29,17 @@ interface Story {
   guess?: Guess
 }
 
-function getUnsplashUrl(query: string, w = 600, h = 900): string {
-  return `https://source.unsplash.com/${w}x${h}/?${encodeURIComponent(query)}`
-}
+// Gradient palette for slide backgrounds
+const GRADIENTS = [
+  "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+  "linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)",
+  "linear-gradient(135deg, #1a0a2e 0%, #3d1f5c 50%, #1a1a2e 100%)",
+  "linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%)",
+  "linear-gradient(135deg, #1e1e2f 0%, #2d1b4e 50%, #1a1a2e 100%)",
+  "linear-gradient(135deg, #0a0a1a 0%, #1a2a3a 50%, #0a1a2a 100%)",
+  "linear-gradient(135deg, #111827 0%, #1f2937 50%, #111827 100%)",
+  "linear-gradient(135deg, #1a1a2e 0%, #2a1a3e 50%, #1a0a2e 100%)",
+]
 
 // Subheadline icon mapping
 function getIcon(subheadline: string): string {
@@ -55,6 +63,7 @@ export default function SlideViewer({ story }: { story: Story }) {
   const [quizAnswer, setQuizAnswer] = useState<string | null>(null)
   const [guessAnswer, setGuessAnswer] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
   // Total "pages": slides + guess (if present) + quiz (if present)
   const pages: Array<{ type: "slide" | "guess" | "quiz"; index?: number }> = []
@@ -131,6 +140,44 @@ export default function SlideViewer({ story }: { story: Story }) {
     return () => window.removeEventListener("keydown", handleKey)
   }, [goNext, goPrev])
 
+  // Touch/swipe navigation
+  useEffect(() => {
+    const container = scrollRef.current
+    if (!container) return
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      }
+    }
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (!touchStartRef.current) return
+      const dx = e.changedTouches[0].clientX - touchStartRef.current.x
+      const dy = e.changedTouches[0].clientY - touchStartRef.current.y
+      const absDx = Math.abs(dx)
+      const absDy = Math.abs(dy)
+
+      // Only register as swipe if horizontal movement is dominant and > 50px
+      if (absDx > absDy && absDx > 50) {
+        if (dx < 0) {
+          goNext()
+        } else {
+          goPrev()
+        }
+      }
+      touchStartRef.current = null
+    }
+
+    container.addEventListener("touchstart", handleTouchStart, { passive: true })
+    container.addEventListener("touchend", handleTouchEnd, { passive: true })
+    return () => {
+      container.removeEventListener("touchstart", handleTouchStart)
+      container.removeEventListener("touchend", handleTouchEnd)
+    }
+  }, [goNext, goPrev])
+
   const handleShare = async () => {
     const shareUrl = story.source_url || window.location.href
     if (navigator.share) {
@@ -145,10 +192,20 @@ export default function SlideViewer({ story }: { story: Story }) {
     }
   }
 
+  const progressPercent = totalPages > 1 ? ((currentSlide + 1) / totalPages) * 100 : 100
+
   return (
     <div className="relative w-full max-w-[393px] mx-auto" style={{ height: "min(852px, 100dvh)" }}>
+      {/* Progress bar at very top */}
+      <div className="absolute top-0 left-0 right-0 z-40 h-[3px] bg-white/10">
+        <div
+          className="h-full bg-nr-red transition-all duration-300 ease-out"
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
+
       {/* Progress dots */}
-      <div className="absolute top-0 left-0 right-0 z-30 flex gap-1 px-3 pt-3">
+      <div className="absolute top-[6px] left-0 right-0 z-30 flex gap-1 px-3 pt-1">
         {pages.map((_, i) => (
           <div
             key={i}
@@ -158,6 +215,13 @@ export default function SlideViewer({ story }: { story: Story }) {
             }}
           />
         ))}
+      </div>
+
+      {/* Slide counter */}
+      <div className="absolute top-4 right-4 z-30">
+        <span className="font-mono text-[11px] text-white/50 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-full">
+          {currentSlide + 1} of {totalPages}
+        </span>
       </div>
 
       {/* Slide container */}
@@ -170,7 +234,8 @@ export default function SlideViewer({ story }: { story: Story }) {
             return (
               <div
                 key={`guess-${pageIndex}`}
-                className="slide-item flex-shrink-0 w-full h-full relative flex flex-col items-center justify-center bg-black px-6"
+                className="slide-item flex-shrink-0 w-full h-full relative flex flex-col items-center justify-center px-6"
+                style={{ background: GRADIENTS[0] }}
               >
                 <div className="glass-card rounded-2xl p-6 w-full max-w-sm">
                   <p className="font-mono text-nr-yellow text-xs uppercase tracking-wider mb-3">
@@ -208,7 +273,8 @@ export default function SlideViewer({ story }: { story: Story }) {
             return (
               <div
                 key={`quiz-${pageIndex}`}
-                className="slide-item flex-shrink-0 w-full h-full relative flex flex-col items-center justify-center bg-black px-6"
+                className="slide-item flex-shrink-0 w-full h-full relative flex flex-col items-center justify-center px-6"
+                style={{ background: GRADIENTS[GRADIENTS.length - 1] }}
               >
                 <div className="glass-card rounded-2xl p-6 w-full max-w-sm">
                   <p className="font-mono text-nr-red text-xs uppercase tracking-wider mb-3">
@@ -264,22 +330,13 @@ export default function SlideViewer({ story }: { story: Story }) {
 
           // Regular slide
           const slide = story.slides[page.index!]
-          const imgQuery = slide.image_query || story.story_headline
+          const gradientIndex = (page.index! + 1) % GRADIENTS.length
           return (
             <div
               key={`slide-${pageIndex}`}
               className="slide-item flex-shrink-0 w-full h-full relative overflow-hidden"
+              style={{ background: GRADIENTS[gradientIndex] }}
             >
-              {/* Background image */}
-              <div
-                className="absolute inset-0 bg-cover bg-center"
-                style={{
-                  backgroundImage: `url(${getUnsplashUrl(imgQuery)})`,
-                }}
-              />
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
-
               {/* Content card at bottom */}
               <div className="absolute bottom-0 left-0 right-0 p-5 pb-16">
                 {/* Source badge on first slide */}
@@ -336,11 +393,22 @@ export default function SlideViewer({ story }: { story: Story }) {
         </button>
       )}
 
-      {/* Bottom bar */}
+      {/* Bottom bar with source attribution */}
       <div className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-between px-5 py-3 bg-black/80 backdrop-blur">
-        <span className="font-mono text-[10px] text-nr-gray-400 tracking-wider">
-          Made with <span className="text-nr-red">Newsreel</span>
-        </span>
+        {story.source_name && story.source_url ? (
+          <a
+            href={story.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono text-[10px] text-nr-gray-400 tracking-wider hover:text-white transition-colors truncate max-w-[60%]"
+          >
+            From <span className="text-white/70">{story.source_name}</span> &middot; Original article
+          </a>
+        ) : (
+          <span className="font-mono text-[10px] text-nr-gray-400 tracking-wider">
+            Made with <span className="text-nr-red">Newsreel</span>
+          </span>
+        )}
         <button
           onClick={handleShare}
           className="flex items-center gap-1.5 text-xs font-mono text-white/60 hover:text-white transition-all"

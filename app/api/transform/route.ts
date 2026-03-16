@@ -147,18 +147,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "ANTHROPIC_API_KEY not configured" }, { status: 500 })
     }
 
-    // Fetch the article
-    const articleResponse = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-      redirect: "follow",
-    })
+    // Fetch the article with realistic browser headers
+    let articleResponse: Response
+    try {
+      articleResponse = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+          "Accept-Encoding": "gzip, deflate, br",
+          "Cache-Control": "no-cache",
+          "Sec-Fetch-Dest": "document",
+          "Sec-Fetch-Mode": "navigate",
+          "Sec-Fetch-Site": "none",
+          "Sec-Fetch-User": "?1",
+          "Upgrade-Insecure-Requests": "1",
+        },
+        redirect: "follow",
+      })
+    } catch (fetchErr) {
+      return NextResponse.json(
+        { error: `Could not reach the site. It may be blocking external requests.` },
+        { status: 400 }
+      )
+    }
 
     if (!articleResponse.ok) {
       return NextResponse.json(
-        { error: `Failed to fetch article (${articleResponse.status})` },
+        { error: `Failed to fetch article (HTTP ${articleResponse.status}). Some sites block automated access. Try a BBC, NPR, Wikipedia, or AP News article.` },
         { status: 422 }
       )
     }
