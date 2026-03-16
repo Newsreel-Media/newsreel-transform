@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --nr-red: #FF6343;
+  --nr-yellow: #EDBD1F;
+  --nr-dark: #000000;
+}
+
+body {
+  background: #000;
+  color: #fff;
+}
+
+/* Hide scrollbar for slide viewer */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Frosted glass card */
+.glass-card {
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Pulse animation for loading */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Slide snap scrolling */
+.slide-container {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.slide-item {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
