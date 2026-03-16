@@ -26,6 +26,12 @@ interface Guess {
   options: string[]
 }
 
+interface QuickPoll {
+  question: string
+  option_a: string
+  option_b: string
+}
+
 interface Story {
   story_headline: string
   subhead: string
@@ -34,6 +40,7 @@ interface Story {
   slides: Slide[]
   quiz?: Quiz
   guess?: Guess
+  quick_poll?: QuickPoll
 }
 
 interface StatOverlay {
@@ -70,6 +77,49 @@ function getIcon(subheadline: string): string {
   if (lower.includes("tangent")) return "\uD83C\uDF00"
   if (lower.includes("content warning")) return "\u26A0\uFE0F"
   return "\uD83D\uDCF0"
+}
+
+// ─── Animated Number Counter ─────────────────────────────────────────
+function AnimatedNumber({ value, suffix, prefix, active }: { value: number; suffix: string; prefix: string; active: boolean }) {
+  const [display, setDisplay] = useState(0)
+  const hasAnimated = useRef(false)
+
+  useEffect(() => {
+    if (!active || hasAnimated.current) return
+    hasAnimated.current = true
+    const duration = 1500
+    const startTime = performance.now()
+    const animate = (now: number) => {
+      const elapsed = now - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setDisplay(Math.round(value * eased))
+      if (progress < 1) {
+        requestAnimationFrame(animate)
+      }
+    }
+    requestAnimationFrame(animate)
+  }, [active, value])
+
+  return (
+    <span className="font-heading text-4xl text-white">
+      {prefix}{display.toLocaleString()}{suffix}
+    </span>
+  )
+}
+
+// ─── Parse stat numbers from slide content ──────────────────────────
+function parseStatNumber(content: string): { value: number; prefix: string; suffix: string; full: string } | null {
+  const match = content.match(/(\$?)([\d,]+(?:\.\d+)?)\s*(%)?\s*(million|billion|trillion|thousand)?/i)
+  if (!match) return null
+  const prefix = match[1] || ""
+  const numStr = match[2].replace(/,/g, "")
+  const value = parseFloat(numStr)
+  if (isNaN(value)) return null
+  let suffix = ""
+  if (match[3]) suffix = "%"
+  if (match[4]) suffix = " " + match[4].toLowerCase()
+  return { value, prefix, suffix, full: match[0] }
 }
 
 // ─── Photo Search Overlay ────────────────────────────────────────────
@@ -453,6 +503,8 @@ export default function StoryEditor({
   const [currentSlide, setCurrentSlide] = useState(0)
   const [quizAnswer, setQuizAnswer] = useState<string | null>(null)
   const [guessAnswer, setGuessAnswer] = useState<string | null>(null)
+  const [pollAnswer, setPollAnswer] = useState<string | null>(null)
+  const [pollPercent] = useState(() => Math.floor(Math.random() * 16) + 55)
   const [slidePhotos, setSlidePhotos] = useState<Record<number, string>>({})
   const [photoSearchSlide, setPhotoSearchSlide] = useState<number | null>(null)
   const [showChartModal, setShowChartModal] = useState(false)
@@ -501,10 +553,18 @@ export default function StoryEditor({
   }, [])
 
   // Page list
-  const pages: Array<{ type: "slide" | "guess" | "quiz"; index?: number }> = []
+  const pages: Array<{ type: "slide" | "guess" | "quiz" | "quick_poll" | "completion"; index?: number }> = []
   if (story.guess) pages.push({ type: "guess" })
-  story.slides.forEach((_, i) => pages.push({ type: "slide", index: i }))
+  story.slides.forEach((_, i) => {
+    pages.push({ type: "slide", index: i })
+    // Insert quick_poll after the second slide (index 1)
+    if (i === 1 && story.quick_poll) {
+      pages.push({ type: "quick_poll" })
+    }
+  })
   if (story.quiz) pages.push({ type: "quiz" })
+  // Always add completion slide at the end
+  pages.push({ type: "completion" })
   const totalPages = pages.length
 
   const scrollToSlide = useCallback((index: number) => {
@@ -857,6 +917,162 @@ export default function StoryEditor({
             )
           }
 
+          // ─── Quick Poll Slide ─────────────────────────────
+          if (page.type === "quick_poll" && story.quick_poll) {
+            const poll = story.quick_poll
+            return (
+              <div
+                key={`poll-${pageIndex}`}
+                className="slide-item flex-shrink-0 w-full h-full relative flex flex-col items-center justify-center px-6"
+                style={{ background: GRADIENTS[3] }}
+              >
+                <div className="w-full max-w-sm text-center">
+                  <p className="font-mono text-nr-red text-xs uppercase tracking-wider mb-4">
+                    This or that
+                  </p>
+                  {isTextEditable ? (
+                    <>
+                      <EditableText
+                        value={poll.question}
+                        onChange={(v) =>
+                          updateStory((s) => ({
+                            ...s,
+                            quick_poll: s.quick_poll ? { ...s.quick_poll, question: v } : undefined,
+                          }))
+                        }
+                        editable={true}
+                        className="font-heading text-white text-xl mb-8 leading-tight"
+                        tag="p"
+                      />
+                      <div className="flex gap-3">
+                        <div className="flex-1 px-5 py-4 rounded-xl border border-white/20 text-white text-sm font-sans">
+                          <EditableText
+                            value={poll.option_a}
+                            onChange={(v) =>
+                              updateStory((s) => ({
+                                ...s,
+                                quick_poll: s.quick_poll ? { ...s.quick_poll, option_a: v } : undefined,
+                              }))
+                            }
+                            editable={true}
+                            tag="span"
+                          />
+                        </div>
+                        <div className="flex-1 px-5 py-4 rounded-xl border border-white/20 text-white text-sm font-sans">
+                          <EditableText
+                            value={poll.option_b}
+                            onChange={(v) =>
+                              updateStory((s) => ({
+                                ...s,
+                                quick_poll: s.quick_poll ? { ...s.quick_poll, option_b: v } : undefined,
+                              }))
+                            }
+                            editable={true}
+                            tag="span"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-heading text-white text-xl mb-8 leading-tight">
+                        {poll.question}
+                      </p>
+                      {pollAnswer ? (
+                        <div className="space-y-3">
+                          <div className={`px-5 py-4 rounded-xl border text-sm font-sans text-center transition-all ${
+                            pollAnswer === "a"
+                              ? "border-[#FF6343] bg-[#FF6343]/15 text-white"
+                              : "border-white/10 text-white/50"
+                          }`}>
+                            {poll.option_a}
+                          </div>
+                          <div className={`px-5 py-4 rounded-xl border text-sm font-sans text-center transition-all ${
+                            pollAnswer === "b"
+                              ? "border-[#FF6343] bg-[#FF6343]/15 text-white"
+                              : "border-white/10 text-white/50"
+                          }`}>
+                            {poll.option_b}
+                          </div>
+                          <p className="font-sans text-white/50 text-sm mt-4">
+                            Thanks! {pollPercent}% of readers picked {pollAnswer === "a" ? poll.option_a : poll.option_b}.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => setPollAnswer("a")}
+                            className="flex-1 px-5 py-4 rounded-xl border border-white/20 text-white text-sm font-sans hover:border-white/40 hover:bg-white/5 transition-all"
+                          >
+                            {poll.option_a}
+                          </button>
+                          <button
+                            onClick={() => setPollAnswer("b")}
+                            className="flex-1 px-5 py-4 rounded-xl border border-white/20 text-white text-sm font-sans hover:border-white/40 hover:bg-white/5 transition-all"
+                          >
+                            {poll.option_b}
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )
+          }
+
+          // ─── Completion Slide ──────────────────────────────
+          if (page.type === "completion") {
+            return (
+              <div
+                key={`completion-${pageIndex}`}
+                className="slide-item flex-shrink-0 w-full h-full relative flex flex-col items-center justify-center px-6"
+                style={{ background: "linear-gradient(135deg, #0d1117 0%, #1a1a2e 40%, #0f3460 100%)" }}
+              >
+                <div className="text-center max-w-sm">
+                  <div
+                    className="w-16 h-16 rounded-full border-2 border-[#FF6343] flex items-center justify-center mx-auto mb-6"
+                    style={{
+                      animation: currentSlide === pageIndex ? "completionBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" : "none",
+                      transform: currentSlide === pageIndex ? undefined : "scale(0)",
+                    }}
+                  >
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                      <path d="M7 14L12 19L21 9" stroke="#FF6343" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                  <p className="font-heading text-2xl text-white mb-3">
+                    You&apos;re caught up!
+                  </p>
+                  <p className="font-sans text-white/60 text-sm leading-relaxed mb-6">
+                    {story.story_headline}
+                  </p>
+                  <button
+                    onClick={handleShare}
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#FF6343] text-white text-sm font-mono hover:bg-[#FF6343]/80 transition-colors mb-4"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M10.5 5.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zM3.5 9.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zM10.5 13.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zM5.4 8.12l3.22 1.76M8.6 4.12L5.4 5.88" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Share this story
+                  </button>
+                  {story.source_name && (
+                    <p className="font-mono text-[10px] text-white/30 uppercase tracking-wider">
+                      From {story.source_name}
+                    </p>
+                  )}
+                </div>
+                <style>{`
+                  @keyframes completionBounce {
+                    0% { transform: scale(0); }
+                    60% { transform: scale(1.15); }
+                    100% { transform: scale(1); }
+                  }
+                `}</style>
+              </div>
+            )
+          }
+
           // ─── Regular Slide ───────────────────────────────
           const slideIndex = page.index!
           const slide = story.slides[slideIndex]
@@ -922,6 +1138,24 @@ export default function StoryEditor({
 
               {/* Stat overlay */}
               {stat && <StatCard stat={stat} />}
+
+              {/* Animated stat number for "By the numbers" slides */}
+              {slide.subheadline.toLowerCase().includes("numbers") && (() => {
+                const parsedStat = parseStatNumber(slide.content)
+                if (!parsedStat) return null
+                return (
+                  <div className="absolute top-1/3 left-0 right-0 flex justify-center z-10 pointer-events-none">
+                    <div className="text-center">
+                      <AnimatedNumber
+                        value={parsedStat.value}
+                        prefix={parsedStat.prefix}
+                        suffix={parsedStat.suffix}
+                        active={currentSlide === pageIndex}
+                      />
+                    </div>
+                  </div>
+                )
+              })()}
 
               {/* Content card at bottom */}
               <div className="absolute bottom-0 left-0 right-0 p-5 pb-16 relative z-10">

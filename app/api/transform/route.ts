@@ -29,6 +29,12 @@ TRIGGER WARNINGS:
 - If the topic involves sensitive content (violence, suicide, sexual assault, etc.), the FIRST slide must be a trigger warning.
 - For trigger warning slides, use "Content warning" as the subheadline.
 
+QUICK POLL:
+- Always generate a quick_poll: a "this or that" opinion question related to the story
+- The question should be a genuine debate point, not a factual question
+- option_a and option_b should be short (under 6 words each), representing two sides
+- Example: "Should cities ban e-scooters?" / "Yes, too dangerous" / "No, they reduce traffic"
+
 QUIZ:
 - Always generate a quiz at the end
 - Medium-hard question reinforcing a key detail
@@ -65,6 +71,11 @@ Return valid JSON with this exact structure:
   "guess": {
     "question": "Before you read: what do you think about [topic]?",
     "options": ["Option 1", "Option 2", "Option 3"]
+  },
+  "quick_poll": {
+    "question": "A concise this-or-that opinion question related to the story",
+    "option_a": "Short position A",
+    "option_b": "Short position B"
   }
 }
 
@@ -208,7 +219,7 @@ CRITICAL RULES:
 - Slide 1 must use "The hook" key phrase
 - Each remaining slide uses a DIFFERENT key phrase from the list
 - Each slide body is 1-2 sentences with real substance
-- Include a quiz and a guess question
+- Include a quiz, a guess question, and a quick_poll
 - Return ONLY valid JSON`
 
     // Call Claude
