@@ -90,27 +90,11 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Bookmarklet */}
-        <div className="bg-nr-gray-900 border border-white/10 rounded-2xl p-6 max-w-xl mx-auto">
-          <p className="font-mono text-xs text-nr-gray-400 uppercase tracking-wider mb-3">
-            Bookmarklet
-          </p>
-          <p className="text-nr-gray-400 text-sm mb-4">
-            Drag this to your bookmarks bar to transform any article with one click:
-          </p>
-          <a
-            href={bookmarkletCode}
-            onClick={(e) => e.preventDefault()}
-            draggable
-            className="inline-flex items-center gap-2 bg-nr-yellow text-black font-heading px-6 py-3 rounded-xl cursor-grab active:cursor-grabbing hover:bg-nr-yellow/90 transition-all"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M8 1L10.5 6H14L11 9L12.5 14L8 11L3.5 14L5 9L2 6H5.5L8 1Z" fill="currentColor"/>
-            </svg>
-            Newsreel-ify
-          </a>
-          <p className="text-nr-gray-600 text-xs mt-3">
-            Drag it - do not click it
+        {/* Value prop */}
+        <div className="max-w-xl mx-auto text-center">
+          <p className="text-nr-gray-400 text-sm leading-relaxed">
+            Same journalism, 3-5x the engagement. Your article becomes swipeable slides
+            with photos, quizzes, and interactive elements. Edit anything, then embed on your site.
           </p>
         </div>
       </section>
