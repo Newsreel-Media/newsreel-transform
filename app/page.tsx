@@ -5,16 +5,16 @@ import { useRouter } from "next/navigation"
 
 const EXAMPLE_URLS = [
   {
-    label: "Oberlin Review article",
-    url: "https://oberlinreview.org/35029/news/campus-dining-workers-negotiate-new-contract/",
+    label: "Oberlin Review",
+    url: "https://oberlinreview.org/37345/opinions/oberlin-students-crave-the-rave-steps-we-should-take-to-improve-the-party-scene-of-oberlin-college/",
   },
   {
-    label: "BBC Technology",
-    url: "https://www.bbc.com/news/technology-67988517",
+    label: "BBC News",
+    url: "https://www.bbc.com/news/technology",
   },
   {
-    label: "Wikipedia AI article",
-    url: "https://en.wikipedia.org/wiki/Artificial_intelligence",
+    label: "Wikipedia",
+    url: "https://en.wikipedia.org/wiki/Generative_artificial_intelligence",
   },
 ]
 
