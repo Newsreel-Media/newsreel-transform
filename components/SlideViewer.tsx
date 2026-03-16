@@ -66,18 +66,30 @@ export default function SlideViewer({ story }: { story: Story }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
-  // Fetch photos for each slide on mount
+  // Fetch photos/gifs for each slide on mount
   useEffect(() => {
     story.slides.forEach((slide, i) => {
       if (!slide.image_query) return
-      fetch(`/api/photos?q=${encodeURIComponent(slide.image_query)}`)
+      // Every 3rd slide gets a GIF for visual variety
+      const type = i % 3 === 1 ? 'gif' : 'photo'
+      fetch(`/api/photos?q=${encodeURIComponent(slide.image_query)}&type=${type}`)
         .then(r => r.json())
         .then(data => {
           if (data.url) {
             setSlidePhotos(prev => ({ ...prev, [i]: data.url }))
           }
         })
-        .catch(() => {})
+        .catch(() => {
+          // Fallback: if GIF fails, try photo
+          if (type === 'gif' && slide.image_query) {
+            fetch(`/api/photos?q=${encodeURIComponent(slide.image_query)}&type=photo`)
+              .then(r => r.json())
+              .then(data => {
+                if (data.url) setSlidePhotos(prev => ({ ...prev, [i]: data.url }))
+              })
+              .catch(() => {})
+          }
+        })
     })
   }, [story.slides])
 
