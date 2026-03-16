@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState, useRef, Suspense } from "react"
-import SlideViewer from "@/components/SlideViewer"
+import StoryEditor from "@/components/StoryEditor"
 
 function TransformContent() {
   const searchParams = useSearchParams()
@@ -131,9 +131,9 @@ function TransformContent() {
         </a>
       </div>
 
-      {/* Slide viewer */}
+      {/* Story editor (replaces read-only SlideViewer) */}
       <div className="flex-1 flex items-center justify-center py-4">
-        <SlideViewer story={story} />
+        <StoryEditor story={story} onStoryChange={(updated) => setStory(updated)} />
       </div>
 
       {/* Share this story section */}
