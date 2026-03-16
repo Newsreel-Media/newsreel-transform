@@ -46,14 +46,13 @@ export default function Home() {
       {/* Hero */}
       <section className="max-w-3xl mx-auto px-6 pt-24 pb-16 text-center">
         <p className="font-mono text-nr-red text-sm tracking-wider uppercase mb-4">
-          Article to Story
+          Free for publishers
         </p>
         <h1 className="font-heading text-4xl md:text-6xl text-white leading-tight mb-6">
-          Turn any article into an interactive story
+          Get your articles on Newsreel
         </h1>
         <p className="text-nr-gray-400 text-lg max-w-xl mx-auto mb-12">
-          Paste a URL and we will transform it into a swipeable, mobile-first
-          Newsreel brief in seconds.
+          Transform any article into interactive slides. Free. Your story goes on Newsreel and reaches thousands of readers.
         </p>
 
         {/* URL Input */}
@@ -94,7 +93,7 @@ export default function Home() {
         <div className="max-w-xl mx-auto text-center">
           <p className="text-nr-gray-400 text-sm leading-relaxed">
             Same journalism, 3-5x the engagement. Your article becomes swipeable slides
-            with photos, quizzes, and interactive elements. Edit anything, then embed on your site.
+            with photos, quizzes, and interactive elements. Publish to Newsreel for free and reach thousands of readers.
           </p>
         </div>
       </section>
@@ -106,7 +105,7 @@ export default function Home() {
           {[
             { step: "01", title: "Paste any article URL", desc: "Drop in a link from any news site, blog, or Wikipedia page" },
             { step: "02", title: "AI transforms it", desc: "Claude reads, extracts, and rewrites the article as interactive slides" },
-            { step: "03", title: "Embed or share the link", desc: "Get an embed code for your site or share the direct link anywhere" },
+            { step: "03", title: "Publish to Newsreel", desc: "Your story goes live on Newsreel and reaches 4,000+ daily readers. Optionally embed on your site too." },
           ].map((item) => (
             <div key={item.step} className="bg-nr-gray-900 border border-white/10 rounded-2xl p-6">
               <span className="font-mono text-nr-red text-sm">{item.step}</span>

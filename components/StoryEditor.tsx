@@ -489,13 +489,22 @@ function EditableText({
   )
 }
 
+// ─── Sponsor Slide Type ─────────────────────────────────────────────
+interface SponsorSlide {
+  name: string
+  message: string
+  link: string
+}
+
 // ─── Main StoryEditor ───────────────────────────────────────────────
 export default function StoryEditor({
   story: initialStory,
   onStoryChange,
+  sponsorSlide,
 }: {
   story: Story
   onStoryChange?: (story: Story) => void
+  sponsorSlide?: SponsorSlide
 }) {
   const [story, setStory] = useState<Story>(initialStory)
   const [editMode, setEditMode] = useState<EditMode>(null)
@@ -553,7 +562,7 @@ export default function StoryEditor({
   }, [])
 
   // Page list
-  const pages: Array<{ type: "headline" | "slide" | "guess" | "quiz" | "quick_poll" | "completion"; index?: number }> = []
+  const pages: Array<{ type: "headline" | "slide" | "guess" | "quiz" | "quick_poll" | "completion" | "sponsored"; index?: number }> = []
   // Headline card is always first
   pages.push({ type: "headline" })
   if (story.guess) pages.push({ type: "guess" })
@@ -562,6 +571,10 @@ export default function StoryEditor({
     // Insert quick_poll after the second slide (index 1)
     if (i === 1 && story.quick_poll) {
       pages.push({ type: "quick_poll" })
+    }
+    // Insert sponsored slide after the third content slide (index 2)
+    if (i === 2 && sponsorSlide) {
+      pages.push({ type: "sponsored" })
     }
   })
   if (story.quiz) pages.push({ type: "quiz" })
@@ -1121,6 +1134,44 @@ export default function StoryEditor({
             )
           }
 
+          // ─── Sponsored Slide ──────────────────────────────
+          if (page.type === "sponsored" && sponsorSlide) {
+            return (
+              <div
+                key={`sponsored-${pageIndex}`}
+                className="slide-item flex-shrink-0 w-full h-full relative flex flex-col items-center justify-center px-6"
+                style={{ background: "linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%)" }}
+              >
+                <div className="w-full max-w-sm">
+                  <p className="font-mono text-[10px] text-white/40 uppercase tracking-widest mb-6 text-center">
+                    Sponsored
+                  </p>
+                  <div className="glass-card rounded-2xl p-6 text-center">
+                    <p className="font-heading text-white text-sm uppercase tracking-wider mb-4 opacity-70">
+                      {sponsorSlide.name}
+                    </p>
+                    <p className="font-sans text-white text-[15px] leading-relaxed mb-6">
+                      {sponsorSlide.message}
+                    </p>
+                    {sponsorSlide.link && (
+                      <a
+                        href={sponsorSlide.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/20 text-white/70 text-sm font-mono hover:text-white hover:border-white/40 transition-all"
+                      >
+                        Learn more
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                          <path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
           // ─── Completion Slide ──────────────────────────────
           if (page.type === "completion") {
             return (
@@ -1144,21 +1195,34 @@ export default function StoryEditor({
                   <p className="font-heading text-2xl text-white mb-3">
                     You&apos;re caught up!
                   </p>
-                  <p className="font-sans text-white/60 text-sm leading-relaxed mb-6">
+                  <p className="font-sans text-white/60 text-sm leading-relaxed mb-4">
                     {story.story_headline}
                   </p>
+                  <p className="font-sans text-white/50 text-sm mb-6">
+                    Read more stories on Newsreel
+                  </p>
+                  <a
+                    href="https://newsreel.co"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#FF6343] text-white text-sm font-mono hover:bg-[#FF6343]/80 transition-colors mb-3"
+                  >
+                    <div className="w-4 h-4 rounded bg-white/20 flex items-center justify-center font-heading text-[8px]">N</div>
+                    Open in Newsreel
+                  </a>
+                  <br />
                   <button
                     onClick={handleShare}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#FF6343] text-white text-sm font-mono hover:bg-[#FF6343]/80 transition-colors mb-4"
+                    className="inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-white/20 text-white/60 text-xs font-mono hover:text-white hover:border-white/40 transition-colors mb-4"
                   >
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
                       <path d="M10.5 5.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zM3.5 9.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zM10.5 13.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zM5.4 8.12l3.22 1.76M8.6 4.12L5.4 5.88" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    Share this story
+                    Share
                   </button>
                   {story.source_name && (
-                    <p className="font-mono text-[10px] text-white/30 uppercase tracking-wider">
-                      From {story.source_name}
+                    <p className="font-mono text-[10px] text-white/30 tracking-wider">
+                      Created by {story.source_name} using Newsreel Transform
                     </p>
                   )}
                 </div>
@@ -1344,20 +1408,15 @@ export default function StoryEditor({
 
       {/* Bottom bar */}
       <div className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-between px-5 py-3 bg-black/80 backdrop-blur">
-        {story.source_name && story.source_url ? (
-          <a
-            href={story.source_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-mono text-[10px] text-nr-gray-400 tracking-wider hover:text-white transition-colors truncate max-w-[60%]"
-          >
-            From <span className="text-white/70">{story.source_name}</span> &middot; Original article
-          </a>
-        ) : (
-          <span className="font-mono text-[10px] text-nr-gray-400 tracking-wider">
-            Made with <span className="text-nr-red">Newsreel</span>
-          </span>
-        )}
+        <a
+          href="https://newsreel.co"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono text-[10px] text-nr-gray-400 tracking-wider hover:text-white transition-colors flex items-center gap-1.5"
+        >
+          <div className="w-3.5 h-3.5 rounded-sm bg-nr-red flex items-center justify-center font-heading text-[6px] text-white">N</div>
+          Read on <span className="text-nr-red">Newsreel</span>
+        </a>
         <button
           onClick={handleShare}
           className="flex items-center gap-1.5 text-xs font-mono text-white/60 hover:text-white transition-all"

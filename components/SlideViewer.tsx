@@ -552,21 +552,34 @@ export default function SlideViewer({ story }: { story: Story }) {
                   <p className="font-heading text-2xl text-white mb-3">
                     You&apos;re caught up!
                   </p>
-                  <p className="font-sans text-white/60 text-sm leading-relaxed mb-6">
+                  <p className="font-sans text-white/60 text-sm leading-relaxed mb-4">
                     {story.story_headline}
                   </p>
+                  <p className="font-sans text-white/50 text-sm mb-6">
+                    Read more stories on Newsreel
+                  </p>
+                  <a
+                    href="https://newsreel.co"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#FF6343] text-white text-sm font-mono hover:bg-[#FF6343]/80 transition-colors mb-3"
+                  >
+                    <div className="w-4 h-4 rounded bg-white/20 flex items-center justify-center font-heading text-[8px]">N</div>
+                    Open in Newsreel
+                  </a>
+                  <br />
                   <button
                     onClick={handleShare}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#FF6343] text-white text-sm font-mono hover:bg-[#FF6343]/80 transition-colors mb-4"
+                    className="inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-white/20 text-white/60 text-xs font-mono hover:text-white hover:border-white/40 transition-colors mb-4"
                   >
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
                       <path d="M10.5 5.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zM3.5 9.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zM10.5 13.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zM5.4 8.12l3.22 1.76M8.6 4.12L5.4 5.88" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    Share this story
+                    Share
                   </button>
                   {story.source_name && (
-                    <p className="font-mono text-[10px] text-white/30 uppercase tracking-wider">
-                      From {story.source_name}
+                    <p className="font-mono text-[10px] text-white/30 tracking-wider">
+                      Created by {story.source_name} using Newsreel Transform
                     </p>
                   )}
                 </div>
@@ -670,20 +683,15 @@ export default function SlideViewer({ story }: { story: Story }) {
 
       {/* Bottom bar with source attribution */}
       <div className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-between px-5 py-3 bg-black/80 backdrop-blur">
-        {story.source_name && story.source_url ? (
-          <a
-            href={story.source_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-mono text-[10px] text-nr-gray-400 tracking-wider hover:text-white transition-colors truncate max-w-[60%]"
-          >
-            From <span className="text-white/70">{story.source_name}</span> &middot; Original article
-          </a>
-        ) : (
-          <span className="font-mono text-[10px] text-nr-gray-400 tracking-wider">
-            Made with <span className="text-nr-red">Newsreel</span>
-          </span>
-        )}
+        <a
+          href="https://newsreel.co"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono text-[10px] text-nr-gray-400 tracking-wider hover:text-white transition-colors flex items-center gap-1.5"
+        >
+          <div className="w-3.5 h-3.5 rounded-sm bg-nr-red flex items-center justify-center font-heading text-[6px] text-white">N</div>
+          Read on <span className="text-nr-red">Newsreel</span>
+        </a>
         <button
           onClick={handleShare}
           className="flex items-center gap-1.5 text-xs font-mono text-white/60 hover:text-white transition-all"
