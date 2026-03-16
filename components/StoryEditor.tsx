@@ -553,7 +553,9 @@ export default function StoryEditor({
   }, [])
 
   // Page list
-  const pages: Array<{ type: "slide" | "guess" | "quiz" | "quick_poll" | "completion"; index?: number }> = []
+  const pages: Array<{ type: "headline" | "slide" | "guess" | "quiz" | "quick_poll" | "completion"; index?: number }> = []
+  // Headline card is always first
+  pages.push({ type: "headline" })
   if (story.guess) pages.push({ type: "guess" })
   story.slides.forEach((_, i) => {
     pages.push({ type: "slide", index: i })
@@ -735,6 +737,104 @@ export default function StoryEditor({
         className="flex w-full h-full overflow-x-auto slide-container hide-scrollbar"
       >
         {pages.map((page, pageIndex) => {
+          // ─── Headline Card ──────────────────────────────
+          if (page.type === "headline") {
+            const coverPhoto = slidePhotos[0]
+            return (
+              <div
+                key={`headline-${pageIndex}`}
+                className="slide-item flex-shrink-0 w-full h-full relative overflow-hidden"
+                style={{ background: GRADIENTS[0] }}
+              >
+                {/* Cover photo */}
+                {coverPhoto && (
+                  <>
+                    <img
+                      src={coverPhoto}
+                      alt=""
+                      className={`absolute inset-0 w-full h-full object-cover ${
+                        showToolbar && editMode === "photo" ? "cursor-pointer" : ""
+                      }`}
+                      loading="eager"
+                      onClick={() => {
+                        if (showToolbar) {
+                          setPhotoSearchSlide(0)
+                        }
+                      }}
+                    />
+                  </>
+                )}
+                {/* Dark gradient overlay */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0.92) 85%, rgba(0,0,0,0.98) 100%)',
+                  }}
+                />
+
+                {/* Photo swap indicator */}
+                {showToolbar && editMode === "photo" && photoSearchSlide !== 0 && (
+                  <button
+                    onClick={() => setPhotoSearchSlide(0)}
+                    className="absolute top-16 left-1/2 -translate-x-1/2 z-30 px-4 py-2 bg-black/60 backdrop-blur-sm border border-white/20 rounded-full text-white/70 text-xs font-mono hover:text-white hover:border-white/40 transition-all min-h-[44px] flex items-center gap-2"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
+                      <rect x="2" y="3" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                      <circle cx="6.5" cy="7.5" r="1.5" stroke="currentColor" strokeWidth="1.2" />
+                      <path d="M2 12L6 9L9 11L12 8L16 12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Tap to swap cover photo
+                  </button>
+                )}
+
+                {/* Photo search overlay */}
+                {photoSearchSlide === 0 && (
+                  <PhotoSearchOverlay
+                    defaultQuery={story.slides[0]?.image_query || story.story_headline}
+                    onSelect={(url) => handlePhotoSelect(0, url)}
+                    onClose={() => setPhotoSearchSlide(null)}
+                  />
+                )}
+
+                {/* Source pill top-left */}
+                {story.source_name && (
+                  <div className="absolute top-10 left-4 z-10">
+                    <span className="font-mono text-[10px] text-white/70 uppercase tracking-widest bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                      {story.source_name}
+                    </span>
+                  </div>
+                )}
+
+                {/* Headline + subhead at bottom */}
+                <div className="absolute bottom-0 left-0 right-0 p-6 pb-20 z-10">
+                  <EditableText
+                    value={story.story_headline}
+                    onChange={(v) => updateStory((s) => ({ ...s, story_headline: v }))}
+                    editable={isTextEditable}
+                    className="font-heading text-[24px] text-white leading-tight mb-2"
+                    tag="h1"
+                  />
+                  <EditableText
+                    value={story.subhead || ""}
+                    onChange={(v) => updateStory((s) => ({ ...s, subhead: v }))}
+                    editable={isTextEditable}
+                    className="font-sans text-[14px] text-white/70 leading-relaxed mb-6"
+                    tag="p"
+                  />
+                  {/* Swipe hint */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-[10px] text-white/40 uppercase tracking-wider">
+                      Swipe to read
+                    </span>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-white/40">
+                      <path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
           // ─── Guess Slide ─────────────────────────────────
           if (page.type === "guess" && story.guess) {
             return (
@@ -1159,26 +1259,6 @@ export default function StoryEditor({
 
               {/* Content card at bottom */}
               <div className="absolute bottom-0 left-0 right-0 p-5 pb-16 relative z-10">
-                {/* Source badge on first slide */}
-                {slideIndex === 0 && story.source_name && (
-                  <div className="inline-block mb-3">
-                    <span className="font-mono text-[10px] text-nr-gray-400 uppercase tracking-widest bg-white/10 px-3 py-1 rounded-full">
-                      {story.source_name}
-                    </span>
-                  </div>
-                )}
-
-                {/* Headline on first slide */}
-                {slideIndex === 0 && (
-                  <EditableText
-                    value={story.story_headline}
-                    onChange={(v) => updateStory((s) => ({ ...s, story_headline: v }))}
-                    editable={isTextEditable}
-                    className="font-heading text-2xl text-white leading-tight mb-3"
-                    tag="h1"
-                  />
-                )}
-
                 <div className="glass-card rounded-2xl p-5">
                   <EditableText
                     value={`${getIcon(slide.subheadline)} ${slide.subheadline}`}

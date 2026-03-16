@@ -147,10 +147,13 @@ export default function SlideViewer({ story }: { story: Story }) {
     })
   }, [story.slides])
 
-  // Total "pages": slides + guess (if present) + quick_poll + quiz + completion
-  const pages: Array<{ type: "slide" | "guess" | "quiz" | "quick_poll" | "completion"; index?: number }> = []
+  // Total "pages": headline + guess (if present) + slides + quick_poll + quiz + completion
+  const pages: Array<{ type: "headline" | "slide" | "guess" | "quiz" | "quick_poll" | "completion"; index?: number }> = []
 
-  // Add guess page first if present
+  // Headline card is always first
+  pages.push({ type: "headline" })
+
+  // Add guess page if present
   if (story.guess) {
     pages.push({ type: "guess" })
   }
@@ -311,6 +314,65 @@ export default function SlideViewer({ story }: { story: Story }) {
         className="flex w-full h-full overflow-x-auto slide-container hide-scrollbar"
       >
         {pages.map((page, pageIndex) => {
+          // ─── Headline Card ──────────────────────────────
+          if (page.type === "headline") {
+            const coverPhoto = slidePhotos[0]
+            return (
+              <div
+                key={`headline-${pageIndex}`}
+                className="slide-item flex-shrink-0 w-full h-full relative overflow-hidden"
+                style={{ background: GRADIENTS[0] }}
+              >
+                {/* Cover photo */}
+                {coverPhoto && (
+                  <img
+                    src={coverPhoto}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover"
+                    loading="eager"
+                  />
+                )}
+                {/* Dark gradient overlay: transparent top to black bottom */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0.92) 85%, rgba(0,0,0,0.98) 100%)',
+                  }}
+                />
+
+                {/* Source pill top-left */}
+                {story.source_name && (
+                  <div className="absolute top-10 left-4 z-10">
+                    <span className="font-mono text-[10px] text-white/70 uppercase tracking-widest bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                      {story.source_name}
+                    </span>
+                  </div>
+                )}
+
+                {/* Headline + subhead at bottom */}
+                <div className="absolute bottom-0 left-0 right-0 p-6 pb-20 z-10">
+                  <h1 className="font-heading text-[24px] text-white leading-tight mb-2">
+                    {story.story_headline}
+                  </h1>
+                  {story.subhead && (
+                    <p className="font-sans text-[14px] text-white/70 leading-relaxed mb-6">
+                      {story.subhead}
+                    </p>
+                  )}
+                  {/* Swipe hint */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-[10px] text-white/40 uppercase tracking-wider">
+                      Swipe to read
+                    </span>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-white/40">
+                      <path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
           if (page.type === "guess" && story.guess) {
             return (
               <div
@@ -568,22 +630,6 @@ export default function SlideViewer({ story }: { story: Story }) {
 
               {/* Content card at bottom */}
               <div className="absolute bottom-0 left-0 right-0 p-5 pb-16 relative z-10">
-                {/* Source badge on first slide */}
-                {page.index === 0 && story.source_name && (
-                  <div className="inline-block mb-3">
-                    <span className="font-mono text-[10px] text-nr-gray-400 uppercase tracking-widest bg-white/10 px-3 py-1 rounded-full">
-                      {story.source_name}
-                    </span>
-                  </div>
-                )}
-
-                {/* Headline on first slide */}
-                {page.index === 0 && (
-                  <h1 className="font-heading text-2xl text-white leading-tight mb-3">
-                    {story.story_headline}
-                  </h1>
-                )}
-
                 <div className="glass-card rounded-2xl p-5">
                   <p className="font-mono text-nr-red text-xs tracking-wider mb-2">
                     {getIcon(slide.subheadline)} {slide.subheadline}
