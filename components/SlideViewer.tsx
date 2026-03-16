@@ -62,8 +62,24 @@ export default function SlideViewer({ story }: { story: Story }) {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [quizAnswer, setQuizAnswer] = useState<string | null>(null)
   const [guessAnswer, setGuessAnswer] = useState<string | null>(null)
+  const [slidePhotos, setSlidePhotos] = useState<Record<number, string>>({})
   const scrollRef = useRef<HTMLDivElement>(null)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+
+  // Fetch photos for each slide on mount
+  useEffect(() => {
+    story.slides.forEach((slide, i) => {
+      if (!slide.image_query) return
+      fetch(`/api/photos?q=${encodeURIComponent(slide.image_query)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.url) {
+            setSlidePhotos(prev => ({ ...prev, [i]: data.url }))
+          }
+        })
+        .catch(() => {})
+    })
+  }, [story.slides])
 
   // Total "pages": slides + guess (if present) + quiz (if present)
   const pages: Array<{ type: "slide" | "guess" | "quiz"; index?: number }> = []
@@ -331,14 +347,34 @@ export default function SlideViewer({ story }: { story: Story }) {
           // Regular slide
           const slide = story.slides[page.index!]
           const gradientIndex = (page.index! + 1) % GRADIENTS.length
+          const photoUrl = slidePhotos[page.index!]
           return (
             <div
               key={`slide-${pageIndex}`}
               className="slide-item flex-shrink-0 w-full h-full relative overflow-hidden"
               style={{ background: GRADIENTS[gradientIndex] }}
             >
+              {/* Photo background */}
+              {photoUrl && (
+                <>
+                  <img
+                    src={photoUrl}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  {/* Gradient overlay so text is readable */}
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background: 'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.85) 70%, rgba(0,0,0,0.95) 100%)',
+                    }}
+                  />
+                </>
+              )}
+
               {/* Content card at bottom */}
-              <div className="absolute bottom-0 left-0 right-0 p-5 pb-16">
+              <div className="absolute bottom-0 left-0 right-0 p-5 pb-16 relative z-10">
                 {/* Source badge on first slide */}
                 {page.index === 0 && story.source_name && (
                   <div className="inline-block mb-3">
