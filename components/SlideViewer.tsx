@@ -36,14 +36,14 @@ interface Story {
   quick_poll?: QuickPoll
 }
 
-// Gradient palette for slide backgrounds (on-brand Newsreel neutrals with subtle color hints)
+// Gradient palette for slide backgrounds (dark with subtle color personality)
 const GRADIENTS = [
-  "linear-gradient(135deg, #000000 0%, #1F1F1F 100%)",
-  "linear-gradient(135deg, #0F0F0F 0%, #1a0f0f 50%, #1F1F1F 100%)",
-  "linear-gradient(135deg, #1F1F1F 0%, #0f0f1a 50%, #0F0F0F 100%)",
-  "linear-gradient(135deg, #000000 0%, #0f1a0f 50%, #1F1F1F 100%)",
-  "linear-gradient(135deg, #0F0F0F 0%, #1a1a0f 50%, #000000 100%)",
-  "linear-gradient(135deg, #1F1F1F 0%, #1a0f1a 50%, #0F0F0F 100%)",
+  "linear-gradient(160deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%)",
+  "linear-gradient(135deg, #0f0f0f 0%, #2d1b2e 50%, #1a0a1e 100%)",
+  "linear-gradient(150deg, #000000 0%, #1a2a1a 50%, #0f1f0f 100%)",
+  "linear-gradient(140deg, #0a0a0a 0%, #2a1a0a 50%, #1f1a0f 100%)",
+  "linear-gradient(160deg, #0f0f0f 0%, #0a1a2a 50%, #1a2a3a 100%)",
+  "linear-gradient(135deg, #000000 0%, #1f0f1f 50%, #2a1a2a 100%)",
 ]
 
 // Subheadline icon mapping

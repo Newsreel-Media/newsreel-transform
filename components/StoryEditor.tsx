@@ -53,12 +53,12 @@ type EditMode = null | "photo" | "text" | "record" | "chart"
 
 // ─── Constants ───────────────────────────────────────────────────────
 const GRADIENTS = [
-  "linear-gradient(135deg, #000000 0%, #1F1F1F 100%)",
-  "linear-gradient(135deg, #0F0F0F 0%, #1a0f0f 50%, #1F1F1F 100%)",
-  "linear-gradient(135deg, #1F1F1F 0%, #0f0f1a 50%, #0F0F0F 100%)",
-  "linear-gradient(135deg, #000000 0%, #0f1a0f 50%, #1F1F1F 100%)",
-  "linear-gradient(135deg, #0F0F0F 0%, #1a1a0f 50%, #000000 100%)",
-  "linear-gradient(135deg, #1F1F1F 0%, #1a0f1a 50%, #0F0F0F 100%)",
+  "linear-gradient(160deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%)",
+  "linear-gradient(135deg, #0f0f0f 0%, #2d1b2e 50%, #1a0a1e 100%)",
+  "linear-gradient(150deg, #000000 0%, #1a2a1a 50%, #0f1f0f 100%)",
+  "linear-gradient(140deg, #0a0a0a 0%, #2a1a0a 50%, #1f1a0f 100%)",
+  "linear-gradient(160deg, #0f0f0f 0%, #0a1a2a 50%, #1a2a3a 100%)",
+  "linear-gradient(135deg, #000000 0%, #1f0f1f 50%, #2a1a2a 100%)",
 ]
 
 function getIcon(subheadline: string): string {
@@ -167,9 +167,15 @@ function PhotoSearchOverlay({
   }
 
   return (
-    <div className="absolute inset-x-0 top-0 z-50 p-3" onClick={(e) => e.stopPropagation()}>
-      <div className="glass-card rounded-xl p-3">
-        <div className="flex items-center gap-2 mb-2">
+    <>
+      {/* Mobile: full-screen fixed modal */}
+      <div
+        className="sm:hidden fixed inset-0 z-50 bg-black/95 flex flex-col"
+        style={{ height: "100dvh", paddingBottom: "env(safe-area-inset-bottom)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header with search input */}
+        <div className="flex items-center gap-2 p-3 pt-[max(12px,env(safe-area-inset-top))] border-b border-white/10 bg-black">
           <input
             ref={inputRef}
             type="text"
@@ -177,11 +183,11 @@ function PhotoSearchOverlay({
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search photos..."
-            className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-white/40"
+            className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-white/40"
           />
           <button
             onClick={search}
-            className="px-3 py-2 bg-nr-red rounded-lg text-white text-sm font-mono hover:bg-nr-red/80 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="px-3 py-2.5 bg-nr-red rounded-lg text-white text-sm font-mono hover:bg-nr-red/80 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             {loading ? (
               <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
@@ -196,40 +202,107 @@ function PhotoSearchOverlay({
           </button>
           <button
             onClick={onClose}
-            className="px-2 py-2 text-white/50 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="px-2 py-2.5 text-white/50 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <svg width="20" height="20" viewBox="0 0 16 16" fill="none">
               <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
           </button>
         </div>
 
-        {results.length > 0 && (
-          <div className="grid grid-cols-4 gap-1.5 max-h-[160px] overflow-y-auto">
-            {results.map((r, i) => (
-              <button
-                key={i}
-                onClick={() => onSelect(r.url)}
-                className="aspect-square rounded-lg overflow-hidden hover:ring-2 hover:ring-nr-red transition-all"
-              >
-                <img
-                  src={r.thumbnail}
-                  alt=""
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Results grid - scrollable area fills remaining space */}
+        <div className="flex-1 overflow-y-auto p-3">
+          {results.length > 0 && (
+            <div className="grid grid-cols-3 gap-2">
+              {results.map((r, i) => (
+                <button
+                  key={i}
+                  onClick={() => onSelect(r.url)}
+                  className="aspect-square rounded-lg overflow-hidden hover:ring-2 hover:ring-nr-red transition-all"
+                >
+                  <img
+                    src={r.thumbnail}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
 
-        {results.length === 0 && !loading && query && (
-          <p className="text-white/60 text-xs font-mono text-center py-2">
-            Hit enter or tap search to find photos
-          </p>
-        )}
+          {results.length === 0 && !loading && query && (
+            <p className="text-white/60 text-xs font-mono text-center py-8">
+              Hit enter or tap search to find photos
+            </p>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Desktop (sm+): inline overlay at top of slide */}
+      <div className="hidden sm:block absolute inset-x-0 top-0 z-50 p-3" onClick={(e) => e.stopPropagation()}>
+        <div className="glass-card rounded-xl p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Search photos..."
+              className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-white/40"
+            />
+            <button
+              onClick={search}
+              className="px-3 py-2 bg-nr-red rounded-lg text-white text-sm font-mono hover:bg-nr-red/80 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            >
+              {loading ? (
+                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="32" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M11 11L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              )}
+            </button>
+            <button
+              onClick={onClose}
+              className="px-2 py-2 text-white/50 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+
+          {results.length > 0 && (
+            <div className="grid grid-cols-4 gap-1.5 max-h-[160px] overflow-y-auto">
+              {results.map((r, i) => (
+                <button
+                  key={i}
+                  onClick={() => onSelect(r.url)}
+                  className="aspect-square rounded-lg overflow-hidden hover:ring-2 hover:ring-nr-red transition-all"
+                >
+                  <img
+                    src={r.thumbnail}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+
+          {results.length === 0 && !loading && query && (
+            <p className="text-white/60 text-xs font-mono text-center py-2">
+              Hit enter or tap search to find photos
+            </p>
+          )}
+        </div>
+      </div>
+    </>
   )
 }
 
@@ -326,12 +399,16 @@ function EditToolbar({
   onSetMode,
   onDone,
   onRecord,
+  keyboardOpen,
 }: {
   editMode: EditMode
   onSetMode: (mode: EditMode) => void
   onDone: () => void
   onRecord: () => void
+  keyboardOpen: boolean
 }) {
+  // Hide toolbar when keyboard is open (it would be behind the keyboard anyway)
+  if (keyboardOpen) return null
 
   const buttons: Array<{ mode: EditMode; label: string; icon: React.ReactNode }> = [
     {
@@ -515,8 +592,20 @@ export default function StoryEditor({
   const [showChartModal, setShowChartModal] = useState(false)
   const [showRecorder, setShowRecorder] = useState(false)
   const [slideStats, setSlideStats] = useState<Record<number, StatOverlay>>({})
+  const [keyboardOpen, setKeyboardOpen] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+
+  // Detect keyboard open via visualViewport API
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const handler = () => {
+      setKeyboardOpen(vv.height < window.innerHeight * 0.75)
+    }
+    vv.addEventListener("resize", handler)
+    return () => vv.removeEventListener("resize", handler)
+  }, [])
 
   // Propagate story changes
   const updateStory = useCallback(
@@ -743,15 +832,16 @@ export default function StoryEditor({
         ))}
       </div>
 
-      {/* Slide counter + edit toggle */}
-      <div className="absolute top-4 right-4 z-30 flex items-center gap-2">
+      {/* Slide counter (top-right) - hidden on mobile when editing */}
+      <div className={`absolute top-4 right-4 z-30 flex items-center gap-2 ${showToolbar ? "hidden sm:flex" : ""}`}>
+        {/* Edit button - visible on desktop only when overlaid; mobile uses bottom bar */}
         <button
           onClick={() => {
             setShowToolbar((t) => !t)
             if (showToolbar) setEditMode(null)
           }}
           aria-label="Edit story"
-          className={`font-mono text-[13px] px-3 py-1.5 rounded-full transition-all min-h-[32px] flex items-center gap-1.5 ${
+          className={`hidden sm:flex font-mono text-[13px] px-3 py-1.5 rounded-full transition-all min-h-[32px] items-center gap-1.5 ${
             showToolbar
               ? "bg-nr-red/30 text-nr-red border border-nr-red/40"
               : "bg-black/50 backdrop-blur-sm text-white/70 border border-white/20 hover:text-white hover:border-white/40"
@@ -762,10 +852,24 @@ export default function StoryEditor({
           </svg>
           {showToolbar ? "Editing" : "Edit"}
         </button>
-        <span className="font-mono text-[11px] text-white/50 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-full">
+        <span className={`font-mono text-[11px] text-white/50 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-full ${showToolbar ? "hidden sm:inline" : ""}`}>
           {currentSlide + 1} of {totalPages}
         </span>
       </div>
+
+      {/* Mobile edit button - below slide viewer area, part of bottom controls */}
+      {!showToolbar && !keyboardOpen && (
+        <button
+          onClick={() => setShowToolbar(true)}
+          aria-label="Edit story"
+          className="sm:hidden absolute bottom-[52px] right-4 z-30 font-mono text-[12px] px-3 py-1.5 rounded-full transition-all min-h-[32px] flex items-center gap-1.5 bg-black/50 backdrop-blur-sm text-white/70 border border-white/20 active:text-white active:border-white/40"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M10.08 1.92a1.5 1.5 0 012.12 0l.88.88a1.5 1.5 0 010 2.12L5.5 12.5 1.5 13l.5-4 8.08-7.08z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Edit
+        </button>
+      )}
 
       {/* Edit hint on first load */}
       {!showToolbar && currentSlide === 0 && (
@@ -1430,6 +1534,7 @@ export default function StoryEditor({
       {showToolbar && (
         <EditToolbar
           editMode={editMode}
+          keyboardOpen={keyboardOpen}
           onSetMode={(mode) => {
             setEditMode(mode)
             if (mode === "chart") {
@@ -1449,8 +1554,8 @@ export default function StoryEditor({
         />
       )}
 
-      {/* Bottom bar */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-between px-5 py-3 bg-black/80 backdrop-blur">
+      {/* Bottom bar - hidden when keyboard is open on mobile */}
+      <div className={`absolute bottom-0 left-0 right-0 z-20 flex items-center justify-between px-5 py-3 bg-black/80 backdrop-blur ${keyboardOpen ? "hidden" : ""}`}>
         <a
           href="https://newsreel.co"
           target="_blank"
