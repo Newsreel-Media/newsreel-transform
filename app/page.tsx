@@ -36,7 +36,7 @@ export default function Home() {
           <div className="w-8 h-8 rounded-lg bg-nr-red flex items-center justify-center font-heading text-white text-sm">
             N
           </div>
-          <span className="font-heading text-white text-lg">Newsreel Transform</span>
+          <span className="font-heading text-white text-lg">Transform</span>
         </div>
         <span className="text-xs font-mono text-nr-ash">Beta</span>
       </nav>
@@ -44,13 +44,13 @@ export default function Home() {
       {/* Hero */}
       <section className="max-w-3xl mx-auto px-6 pt-24 pb-16 text-center">
         <p className="font-mono text-nr-red text-sm tracking-wider uppercase mb-4">
-          Free for publishers
+          Paste a link. Get an interactive story.
         </p>
         <h1 className="font-heading text-4xl md:text-6xl text-white leading-tight mb-6">
-          Get your articles on Newsreel
+          Turn any article into something people actually swipe through
         </h1>
         <p className="text-nr-ash text-lg max-w-xl mx-auto mb-12">
-          Transform any article into interactive slides. Free. Your story goes on Newsreel and reaches thousands of readers.
+          Drop in a URL. We turn it into interactive slides with photos, quizzes, polls, and animated stats. Free. Takes 30 seconds.
         </p>
 
         {/* URL Input - stacks on mobile */}
@@ -90,8 +90,7 @@ export default function Home() {
         {/* Value prop */}
         <div className="max-w-xl mx-auto text-center">
           <p className="text-nr-ash text-sm leading-relaxed">
-            Same journalism, 3-5x the engagement. Your article becomes swipeable slides
-            with photos, quizzes, and interactive elements. Publish to Newsreel for free and reach thousands of readers.
+            Your words. Your reporting. Just a format readers actually finish. No paywall, no account needed, no cost.
           </p>
         </div>
       </section>
@@ -101,9 +100,9 @@ export default function Home() {
         <h2 className="font-heading text-2xl text-white text-center mb-8">How it works</h2>
         <div className="grid md:grid-cols-3 gap-6">
           {[
-            { step: "01", title: "Paste any article URL", desc: "Drop in a link from any news site, blog, or Wikipedia page" },
-            { step: "02", title: "AI transforms it", desc: "Claude reads, extracts, and rewrites the article as interactive slides" },
-            { step: "03", title: "Publish to Newsreel", desc: "Your story goes live on Newsreel and reaches 4,000+ daily readers. Optionally embed on your site too." },
+            { step: "01", title: "Paste any URL", desc: "Any article from any site. News, opinion, features, research -- it all works." },
+            { step: "02", title: "Watch it become interactive", desc: "Your article gets rebuilt as swipeable slides with photos, quizzes, and animated stats. Same story, totally new format." },
+            { step: "03", title: "Share it or embed it", desc: "Your interactive story gets a shareable link instantly. Embed it on your own site or publish it to the Newsreel platform to reach new readers." },
           ].map((item) => (
             <div key={item.step} className="bg-nr-charcoal border border-white/10 rounded-2xl p-6">
               <span className="font-mono text-nr-red text-sm">{item.step}</span>

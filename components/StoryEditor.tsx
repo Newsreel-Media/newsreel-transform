@@ -53,12 +53,12 @@ type EditMode = null | "photo" | "text" | "record" | "chart"
 
 // ─── Constants ───────────────────────────────────────────────────────
 const GRADIENTS = [
-  "linear-gradient(135deg, #000000 0%, #0F0F0F 50%, #1F1F1F 100%)",
-  "linear-gradient(135deg, #0F0F0F 0%, #1F1F1F 50%, #0F0F0F 100%)",
-  "linear-gradient(135deg, #1F1F1F 0%, #0F0F0F 50%, #000000 100%)",
-  "linear-gradient(135deg, #000000 0%, #1F1F1F 50%, #3A3A3A 100%)",
-  "linear-gradient(135deg, #0F0F0F 0%, #3A3A3A 50%, #1F1F1F 100%)",
-  "linear-gradient(135deg, #1F1F1F 0%, #000000 50%, #0F0F0F 100%)",
+  "linear-gradient(135deg, #000000 0%, #1F1F1F 100%)",
+  "linear-gradient(135deg, #0F0F0F 0%, #1a0f0f 50%, #1F1F1F 100%)",
+  "linear-gradient(135deg, #1F1F1F 0%, #0f0f1a 50%, #0F0F0F 100%)",
+  "linear-gradient(135deg, #000000 0%, #0f1a0f 50%, #1F1F1F 100%)",
+  "linear-gradient(135deg, #0F0F0F 0%, #1a1a0f 50%, #000000 100%)",
+  "linear-gradient(135deg, #1F1F1F 0%, #1a0f1a 50%, #0F0F0F 100%)",
 ]
 
 function getIcon(subheadline: string): string {
@@ -530,29 +530,46 @@ export default function StoryEditor({
     [onStoryChange]
   )
 
-  // Fetch photos on mount
+  // Fetch photos sequentially to avoid duplicate photos across slides
   useEffect(() => {
-    story.slides.forEach((slide, i) => {
-      if (!slide.image_query) return
-      const type = i % 3 === 1 ? "gif" : "photo"
-      fetch(`/api/photos?q=${encodeURIComponent(slide.image_query)}&type=${type}`)
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.url) {
-            setSlidePhotos((prev) => ({ ...prev, [i]: data.url }))
+    const fetchPhotosSequentially = async () => {
+      const usedUrls = new Set<string>()
+      for (let i = 0; i < story.slides.length; i++) {
+        const slide = story.slides[i]
+        if (!slide.image_query) continue
+        const type = i % 3 === 1 ? "gif" : "photo"
+        try {
+          const res = await fetch(`/api/photos?q=${encodeURIComponent(slide.image_query)}&type=${type}&count=3`)
+          const data = await res.json()
+          const results: Array<{ url?: string }> = data.results || (data.url ? [data] : [])
+          const unused = results.find((r) => r.url && !usedUrls.has(r.url))
+          if (unused?.url) {
+            usedUrls.add(unused.url)
+            setSlidePhotos((prev) => ({ ...prev, [i]: unused.url! }))
+          } else if (results[0]?.url) {
+            usedUrls.add(results[0].url)
+            setSlidePhotos((prev) => ({ ...prev, [i]: results[0].url! }))
           }
-        })
-        .catch(() => {
+        } catch {
           if (type === "gif" && slide.image_query) {
-            fetch(`/api/photos?q=${encodeURIComponent(slide.image_query)}&type=photo`)
-              .then((r) => r.json())
-              .then((data) => {
-                if (data.url) setSlidePhotos((prev) => ({ ...prev, [i]: data.url }))
-              })
-              .catch(() => {})
+            try {
+              const res = await fetch(`/api/photos?q=${encodeURIComponent(slide.image_query)}&type=photo&count=3`)
+              const data = await res.json()
+              const results: Array<{ url?: string }> = data.results || (data.url ? [data] : [])
+              const unused = results.find((r) => r.url && !usedUrls.has(r.url))
+              if (unused?.url) {
+                usedUrls.add(unused.url)
+                setSlidePhotos((prev) => ({ ...prev, [i]: unused.url! }))
+              } else if (results[0]?.url) {
+                usedUrls.add(results[0].url)
+                setSlidePhotos((prev) => ({ ...prev, [i]: results[0].url! }))
+              }
+            } catch {}
           }
-        })
-    })
+        }
+      }
+    }
+    fetchPhotosSequentially()
     // Only run on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
