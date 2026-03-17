@@ -1709,7 +1709,7 @@ export default function StoryEditor({
                       })
                     }}
                     editable={isTextEditable}
-                    className="font-mono text-nr-red text-xs tracking-wider mb-2"
+                    className="font-mono text-white/80 text-xs tracking-wider mb-2"
                     tag="p"
                   />
                   <EditableText
