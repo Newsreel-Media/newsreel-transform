@@ -103,7 +103,7 @@ function AnimatedNumber({ value, suffix, prefix, active }: { value: number; suff
   }, [active, value])
 
   return (
-    <span className="font-heading text-4xl text-white">
+    <span className="font-heading text-4xl text-white" style={{ textShadow: '0 2px 16px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.6)' }}>
       {prefix}{display.toLocaleString()}{suffix}
     </span>
   )
@@ -130,7 +130,7 @@ function PhotoSearchOverlay({
   onClose,
 }: {
   defaultQuery: string
-  onSelect: (url: string) => void
+  onSelect: (url: string, mediaType?: 'image' | 'video') => void
   onClose: () => void
 }) {
   const [query, setQuery] = useState(defaultQuery)
@@ -150,7 +150,8 @@ function PhotoSearchOverlay({
     const file = e.target.files?.[0]
     if (file) {
       const objectUrl = URL.createObjectURL(file)
-      onSelect(objectUrl)
+      const mediaType = file.type.startsWith('video/') ? 'video' as const : 'image' as const
+      onSelect(objectUrl, mediaType)
     }
   }
 
@@ -688,6 +689,7 @@ export default function StoryEditor({
   const [showChartModal, setShowChartModal] = useState(false)
   const [showRecorder, setShowRecorder] = useState(false)
   const [slideStats, setSlideStats] = useState<Record<number, StatOverlay>>({})
+  const [slideMediaTypes, setSlideMediaTypes] = useState<Record<number, 'image' | 'video'>>({})
   const [keyboardOpen, setKeyboardOpen] = useState(false)
   const [keyboardHeight, setKeyboardHeight] = useState(280)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -904,8 +906,14 @@ export default function StoryEditor({
   }
 
   // Handle photo swap
-  const handlePhotoSelect = (slideIndex: number, url: string) => {
+  const handlePhotoSelect = (slideIndex: number, url: string, mediaType?: 'image' | 'video') => {
     setSlidePhotos((prev) => ({ ...prev, [slideIndex]: url }))
+    if (mediaType) {
+      setSlideMediaTypes((prev) => ({ ...prev, [slideIndex]: mediaType }))
+    } else {
+      // Default to image for search results
+      setSlideMediaTypes((prev) => ({ ...prev, [slideIndex]: 'image' }))
+    }
     setPhotoSearchSlide(null)
   }
 
@@ -1010,22 +1018,40 @@ export default function StoryEditor({
                 className="slide-item flex-shrink-0 w-full h-full relative overflow-hidden"
                 style={{ background: GRADIENTS[0] }}
               >
-                {/* Cover photo */}
+                {/* Cover photo/video */}
                 {coverPhoto && (
                   <>
-                    <img
-                      src={coverPhoto}
-                      alt=""
-                      className={`absolute inset-0 w-full h-full object-cover ${
-                        showToolbar && editMode === "photo" ? "cursor-pointer" : ""
-                      }`}
-                      loading="eager"
-                      onClick={() => {
-                        if (showToolbar) {
-                          setPhotoSearchSlide(0)
-                        }
-                      }}
-                    />
+                    {slideMediaTypes[0] === 'video' ? (
+                      <video
+                        src={coverPhoto}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className={`absolute inset-0 w-full h-full object-cover ${
+                          showToolbar && editMode === "photo" ? "cursor-pointer" : ""
+                        }`}
+                        onClick={() => {
+                          if (showToolbar) {
+                            setPhotoSearchSlide(0)
+                          }
+                        }}
+                      />
+                    ) : (
+                      <img
+                        src={coverPhoto}
+                        alt=""
+                        className={`absolute inset-0 w-full h-full object-cover ${
+                          showToolbar && editMode === "photo" ? "cursor-pointer" : ""
+                        }`}
+                        loading="eager"
+                        onClick={() => {
+                          if (showToolbar) {
+                            setPhotoSearchSlide(0)
+                          }
+                        }}
+                      />
+                    )}
                   </>
                 )}
                 {/* Dark gradient overlay */}
@@ -1055,7 +1081,7 @@ export default function StoryEditor({
                 {photoSearchSlide === 0 && (
                   <PhotoSearchOverlay
                     defaultQuery={story.slides[0]?.image_query || story.story_headline}
-                    onSelect={(url) => handlePhotoSelect(0, url)}
+                    onSelect={(url, mediaType) => handlePhotoSelect(0, url, mediaType)}
                     onClose={() => setPhotoSearchSlide(null)}
                   />
                 )}
@@ -1503,22 +1529,40 @@ export default function StoryEditor({
               className="slide-item flex-shrink-0 w-full h-full relative overflow-hidden"
               style={{ background: GRADIENTS[gradientIndex] }}
             >
-              {/* Photo background */}
+              {/* Photo/Video background */}
               {photoUrl && (
                 <>
-                  <img
-                    src={photoUrl}
-                    alt=""
-                    className={`absolute inset-0 w-full h-full object-cover ${
-                      showToolbar && editMode === "photo" ? "cursor-pointer" : ""
-                    }`}
-                    loading="lazy"
-                    onClick={() => {
-                      if (showToolbar) {
-                        setPhotoSearchSlide(slideIndex)
-                      }
-                    }}
-                  />
+                  {slideMediaTypes[slideIndex] === 'video' ? (
+                    <video
+                      src={photoUrl}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className={`absolute inset-0 w-full h-full object-cover ${
+                        showToolbar && editMode === "photo" ? "cursor-pointer" : ""
+                      }`}
+                      onClick={() => {
+                        if (showToolbar) {
+                          setPhotoSearchSlide(slideIndex)
+                        }
+                      }}
+                    />
+                  ) : (
+                    <img
+                      src={photoUrl}
+                      alt=""
+                      className={`absolute inset-0 w-full h-full object-cover ${
+                        showToolbar && editMode === "photo" ? "cursor-pointer" : ""
+                      }`}
+                      loading="lazy"
+                      onClick={() => {
+                        if (showToolbar) {
+                          setPhotoSearchSlide(slideIndex)
+                        }
+                      }}
+                    />
+                  )}
                   <div
                     className="absolute inset-0"
                     style={{
@@ -1529,8 +1573,23 @@ export default function StoryEditor({
                 </>
               )}
 
+              {/* Add photo empty state */}
+              {!photoUrl && showToolbar && (
+                <button
+                  onClick={() => setPhotoSearchSlide(slideIndex)}
+                  className="absolute top-1/3 left-1/2 -translate-x-1/2 z-30 px-5 py-3 bg-white/10 backdrop-blur-sm border border-dashed border-white/30 rounded-2xl text-white/70 text-sm font-mono hover:text-white hover:border-white/50 hover:bg-white/15 transition-all min-h-[44px] flex items-center gap-2"
+                >
+                  <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+                    <rect x="2" y="3" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                    <circle cx="6.5" cy="7.5" r="1.5" stroke="currentColor" strokeWidth="1.2" />
+                    <path d="M2 12L6 9L9 11L12 8L16 12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  + Add photo
+                </button>
+              )}
+
               {/* Photo swap indicator */}
-              {showToolbar && editMode === "photo" && !photoSearchSlide && (
+              {showToolbar && editMode === "photo" && !photoSearchSlide && photoUrl && (
                 <button
                   onClick={() => setPhotoSearchSlide(slideIndex)}
                   className="absolute top-16 left-1/2 -translate-x-1/2 z-30 px-4 py-2 bg-black/60 backdrop-blur-sm border border-white/20 rounded-full text-white/70 text-xs font-mono hover:text-white hover:border-white/40 transition-all min-h-[44px] flex items-center gap-2"
@@ -1548,7 +1607,7 @@ export default function StoryEditor({
               {photoSearchSlide === slideIndex && (
                 <PhotoSearchOverlay
                   defaultQuery={slide.image_query || ""}
-                  onSelect={(url) => handlePhotoSelect(slideIndex, url)}
+                  onSelect={(url, mediaType) => handlePhotoSelect(slideIndex, url, mediaType)}
                   onClose={() => setPhotoSearchSlide(null)}
                 />
               )}
@@ -1562,7 +1621,7 @@ export default function StoryEditor({
                 if (!parsedStat) return null
                 return (
                   <div className="absolute top-1/3 left-0 right-0 flex justify-center z-10 pointer-events-none">
-                    <div className="text-center">
+                    <div className="bg-black/40 backdrop-blur-sm rounded-2xl px-6 py-4 text-center">
                       <AnimatedNumber
                         value={parsedStat.value}
                         prefix={parsedStat.prefix}
@@ -1718,6 +1777,7 @@ export default function StoryEditor({
             const url = URL.createObjectURL(file)
             if (currentSlideIndex !== undefined) {
               setSlidePhotos(prev => ({ ...prev, [currentSlideIndex]: url }))
+              setSlideMediaTypes(prev => ({ ...prev, [currentSlideIndex]: 'video' }))
             }
             setShowRecorder(false)
           }}

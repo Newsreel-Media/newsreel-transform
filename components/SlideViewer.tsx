@@ -90,7 +90,7 @@ function AnimatedNumber({ value, suffix, prefix, active }: { value: number; suff
   }, [active, value])
 
   return (
-    <span className="font-heading text-4xl text-white">
+    <span className="font-heading text-4xl text-white" style={{ textShadow: '0 2px 16px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.6)' }}>
       {prefix}{display.toLocaleString()}{suffix}
     </span>
   )
@@ -118,6 +118,7 @@ export default function SlideViewer({ story }: { story: Story }) {
   const [pollAnswer, setPollAnswer] = useState<string | null>(null)
   const [pollPercent] = useState(() => Math.floor(Math.random() * 16) + 55) // 55-70%
   const [slidePhotos, setSlidePhotos] = useState<Record<number, string>>({})
+  const [slideMediaTypes, setSlideMediaTypes] = useState<Record<number, 'image' | 'video'>>({})
   const scrollRef = useRef<HTMLDivElement>(null)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
@@ -343,14 +344,27 @@ export default function SlideViewer({ story }: { story: Story }) {
                 className="slide-item flex-shrink-0 w-full h-full relative overflow-hidden"
                 style={{ background: GRADIENTS[0] }}
               >
-                {/* Cover photo */}
+                {/* Cover photo/video */}
                 {coverPhoto && (
-                  <img
-                    src={coverPhoto}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover"
-                    loading="eager"
-                  />
+                  <>
+                    {slideMediaTypes[0] === 'video' ? (
+                      <video
+                        src={coverPhoto}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={coverPhoto}
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-cover"
+                        loading="eager"
+                      />
+                    )}
+                  </>
                 )}
                 {/* Dark gradient overlay: transparent top to black bottom */}
                 <div
@@ -627,15 +641,26 @@ export default function SlideViewer({ story }: { story: Story }) {
               className="slide-item flex-shrink-0 w-full h-full relative overflow-hidden"
               style={{ background: GRADIENTS[gradientIndex] }}
             >
-              {/* Photo background */}
+              {/* Photo/Video background */}
               {photoUrl && (
                 <>
-                  <img
-                    src={photoUrl}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover"
-                    loading="lazy"
-                  />
+                  {slideMediaTypes[page.index!] === 'video' ? (
+                    <video
+                      src={photoUrl}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={photoUrl}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  )}
                   {/* Gradient overlay so text is readable */}
                   <div
                     className="absolute inset-0"
@@ -652,7 +677,7 @@ export default function SlideViewer({ story }: { story: Story }) {
                 if (!stat) return null
                 return (
                   <div className="absolute top-1/3 left-0 right-0 flex justify-center z-10 pointer-events-none">
-                    <div className="text-center">
+                    <div className="bg-black/40 backdrop-blur-sm rounded-2xl px-6 py-4 text-center">
                       <AnimatedNumber
                         value={stat.value}
                         prefix={stat.prefix}

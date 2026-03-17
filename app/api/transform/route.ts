@@ -43,7 +43,10 @@ QUIZ:
 - Mark which answer is correct using the correct_answer field (a, b, c, or d)
 
 IMAGE QUERIES:
-- For each slide, provide an image_query: a short search phrase (3-5 words) that could find a relevant photo on Unsplash.
+- For each slide, provide an image_query: a short search phrase (2-4 words) for a Creative Commons photo search.
+- Use concrete, visual nouns (people, places, objects) not abstract concepts.
+- Example: Instead of "economic uncertainty" use "stock exchange trading floor". Instead of "political tension" use "US Capitol building".
+- Each query should describe something a photographer could actually photograph.
 
 OUTPUT FORMAT:
 Return valid JSON with this exact structure:
