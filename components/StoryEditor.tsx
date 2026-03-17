@@ -690,6 +690,7 @@ export default function StoryEditor({
   const [showRecorder, setShowRecorder] = useState(false)
   const [slideStats, setSlideStats] = useState<Record<number, StatOverlay>>({})
   const [slideMediaTypes, setSlideMediaTypes] = useState<Record<number, 'image' | 'video'>>({})
+  const [slideVideos, setSlideVideos] = useState<Record<number, string>>({})
   const [keyboardOpen, setKeyboardOpen] = useState(false)
   const [keyboardHeight, setKeyboardHeight] = useState(280)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -1084,6 +1085,32 @@ export default function StoryEditor({
                     onSelect={(url, mediaType) => handlePhotoSelect(0, url, mediaType)}
                     onClose={() => setPhotoSearchSlide(null)}
                   />
+                )}
+
+                {/* PiP video overlay */}
+                {slideVideos[0] && (
+                  <div className="absolute bottom-[140px] right-4 z-20 w-[120px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
+                    <video
+                      src={slideVideos[0]}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      onClick={() => setSlideVideos(prev => {
+                        const next = { ...prev }
+                        delete next[0]
+                        return next
+                      })}
+                      className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-black/80 border border-white/20 flex items-center justify-center text-white/70 hover:text-white z-30"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                        <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    </button>
+                  </div>
                 )}
 
                 {/* Source pill top-left */}
@@ -1633,6 +1660,32 @@ export default function StoryEditor({
                 )
               })()}
 
+              {/* PiP video overlay */}
+              {slideVideos[slideIndex] && (
+                <div className="absolute bottom-[140px] right-4 z-20 w-[120px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
+                  <video
+                    src={slideVideos[slideIndex]}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    onClick={() => setSlideVideos(prev => {
+                      const next = { ...prev }
+                      delete next[slideIndex]
+                      return next
+                    })}
+                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-black/80 border border-white/20 flex items-center justify-center text-white/70 hover:text-white z-30"
+                  >
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                </div>
+              )}
+
               {/* Content card at bottom */}
               <div className="absolute bottom-0 left-0 right-0 p-5 relative z-10" style={{ paddingBottom: keyboardOpen ? keyboardHeight + 16 : 64 }}>
                 <div className="glass-card rounded-2xl p-5">
@@ -1773,10 +1826,9 @@ export default function StoryEditor({
               : undefined
           }
           onRecordingComplete={(file) => {
-            // Create a URL for the recorded video and set it as the slide's photo
             const url = URL.createObjectURL(file)
             if (currentSlideIndex !== undefined) {
-              setSlidePhotos(prev => ({ ...prev, [currentSlideIndex]: url }))
+              setSlideVideos(prev => ({ ...prev, [currentSlideIndex]: url }))
               setSlideMediaTypes(prev => ({ ...prev, [currentSlideIndex]: 'video' }))
             }
             setShowRecorder(false)

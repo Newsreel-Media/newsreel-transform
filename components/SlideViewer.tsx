@@ -119,6 +119,7 @@ export default function SlideViewer({ story }: { story: Story }) {
   const [pollPercent] = useState(() => Math.floor(Math.random() * 16) + 55) // 55-70%
   const [slidePhotos, setSlidePhotos] = useState<Record<number, string>>({})
   const [slideMediaTypes, setSlideMediaTypes] = useState<Record<number, 'image' | 'video'>>({})
+  const [slideVideos] = useState<Record<number, string>>({})
   const scrollRef = useRef<HTMLDivElement>(null)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
@@ -373,6 +374,20 @@ export default function SlideViewer({ story }: { story: Story }) {
                     background: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0.92) 85%, rgba(0,0,0,0.98) 100%)',
                   }}
                 />
+
+                {/* PiP video overlay */}
+                {slideVideos[0] && (
+                  <div className="absolute bottom-[140px] right-4 z-20 w-[120px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
+                    <video
+                      src={slideVideos[0]}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
 
                 {/* Source pill top-left */}
                 {story.source_name && (
@@ -688,6 +703,20 @@ export default function SlideViewer({ story }: { story: Story }) {
                   </div>
                 )
               })()}
+
+              {/* PiP video overlay */}
+              {slideVideos[page.index!] && (
+                <div className="absolute bottom-[140px] right-4 z-20 w-[120px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
+                  <video
+                    src={slideVideos[page.index!]}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
 
               {/* Content card at bottom */}
               <div className="absolute bottom-0 left-0 right-0 p-5 pb-16 relative z-10">
