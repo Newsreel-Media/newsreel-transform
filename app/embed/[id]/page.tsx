@@ -88,6 +88,12 @@ function EmbedContent() {
   useEffect(() => {
     // Option 1: Story data passed via postMessage from parent iframe
     const handleMessage = (event: MessageEvent) => {
+      // Validate origin: only accept messages from same origin or newsreel.co domains
+      const allowedOrigins = [window.location.origin]
+      const isNewsreelDomain = /^https?:\/\/([a-z0-9-]+\.)*newsreel\.co$/.test(event.origin)
+      if (!allowedOrigins.includes(event.origin) && !isNewsreelDomain) {
+        return
+      }
       if (event.data?.type === "newsreel-story") {
         setStory(event.data.story)
         setLoading(false)

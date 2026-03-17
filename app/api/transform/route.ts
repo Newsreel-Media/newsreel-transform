@@ -144,13 +144,63 @@ function extractParagraphs(html: string): string {
   return paragraphs.join("\n\n")
 }
 
+// Simple in-memory rate limiter: 10 transforms per IP per hour
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(ip)
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + 3600000 }) // 1 hour
+    return true
+  }
+  if (entry.count >= 10) return false
+  entry.count++
+  return true
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'
+    if (!checkRateLimit(ip)) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Try again in an hour." },
+        { status: 429 }
+      )
+    }
+
     const body = await request.json()
     const { url, slideCount } = body
 
     if (!url) {
       return NextResponse.json({ error: "Missing url parameter" }, { status: 400 })
+    }
+
+    // SSRF protection: validate URL is not targeting internal/private networks
+    let parsedUrl: URL
+    try {
+      parsedUrl = new URL(url)
+    } catch {
+      return NextResponse.json({ error: "Invalid URL" }, { status: 400 })
+    }
+
+    if (parsedUrl.protocol === 'file:') {
+      return NextResponse.json({ error: "file:// URLs are not allowed" }, { status: 400 })
+    }
+
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      return NextResponse.json({ error: "Only http and https URLs are allowed" }, { status: 400 })
+    }
+
+    const hostname = parsedUrl.hostname
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '[::1]' ||
+      hostname.match(/^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.)/)
+    ) {
+      return NextResponse.json({ error: "URLs targeting internal networks are not allowed" }, { status: 400 })
     }
 
     const apiKey = process.env.ANTHROPIC_API_KEY
@@ -262,7 +312,7 @@ CRITICAL RULES:
       storyData = JSON.parse(cleaned)
     } catch {
       return NextResponse.json(
-        { error: "The AI returned an invalid response. Please try again." },
+        { error: "AI returned an invalid response. Please try again." },
         { status: 502 }
       )
     }

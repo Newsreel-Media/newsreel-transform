@@ -334,8 +334,6 @@ function EditToolbar({
   onDone: () => void
   onRecord: () => void
 }) {
-  const [showRecordTip, setShowRecordTip] = useState(false)
-  void showRecordTip // suppress unused warning
 
   const buttons: Array<{ mode: EditMode; label: string; icon: React.ReactNode }> = [
     {
@@ -683,11 +681,15 @@ export default function StoryEditor({
 
   const handleShare = async () => {
     const shareUrl = story.source_url || window.location.href
-    if (navigator.share) {
-      await navigator.share({ title: story.story_headline, text: story.subhead, url: shareUrl })
-    } else {
-      await navigator.clipboard.writeText(shareUrl)
-      alert("Link copied to clipboard!")
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: story.story_headline, text: story.subhead, url: shareUrl })
+      } else {
+        await navigator.clipboard.writeText(shareUrl)
+        alert("Link copied to clipboard!")
+      }
+    } catch {
+      // User cancelled share or clipboard access denied
     }
   }
 
@@ -712,8 +714,6 @@ export default function StoryEditor({
   // Current page info for photo mode
   const currentPage = pages[currentSlide]
   const currentSlideIndex = currentPage?.type === "slide" ? currentPage.index : undefined
-
-  const progressPercent = totalPages > 1 ? ((currentSlide + 1) / totalPages) * 100 : 100
 
   return (
     <div className="relative w-full max-w-[393px] mx-auto" style={{ height: "min(852px, 100dvh)" }}>
@@ -1168,7 +1168,7 @@ export default function StoryEditor({
                     <p className="font-sans text-white text-[15px] leading-relaxed mb-6">
                       {sponsorSlide.message}
                     </p>
-                    {sponsorSlide.link && (
+                    {sponsorSlide.link && /^https?:\/\//.test(sponsorSlide.link) && (
                       <a
                         href={sponsorSlide.link}
                         target="_blank"

@@ -28,8 +28,6 @@ export default function Home() {
     router.push(`/transform?url=${encodeURIComponent(url.trim())}`)
   }
 
-  const bookmarkletCode = `javascript:void(window.open('${typeof window !== "undefined" ? window.location.origin : "http://localhost:3006"}/transform?url='+encodeURIComponent(window.location.href),'_blank'))`
-
   return (
     <main className="min-h-screen bg-black">
       {/* Nav */}
@@ -40,7 +38,7 @@ export default function Home() {
           </div>
           <span className="font-heading text-white text-lg">Newsreel Transform</span>
         </div>
-        <span className="text-xs font-mono text-nr-gray-400">MVP</span>
+        <span className="text-xs font-mono text-nr-ash">Beta</span>
       </nav>
 
       {/* Hero */}
@@ -51,18 +49,18 @@ export default function Home() {
         <h1 className="font-heading text-4xl md:text-6xl text-white leading-tight mb-6">
           Get your articles on Newsreel
         </h1>
-        <p className="text-nr-gray-400 text-lg max-w-xl mx-auto mb-12">
+        <p className="text-nr-ash text-lg max-w-xl mx-auto mb-12">
           Transform any article into interactive slides. Free. Your story goes on Newsreel and reaches thousands of readers.
         </p>
 
-        {/* URL Input */}
-        <form onSubmit={handleTransform} className="flex gap-3 max-w-xl mx-auto mb-6">
+        {/* URL Input - stacks on mobile */}
+        <form onSubmit={handleTransform} className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto mb-6">
           <input
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://example.com/article..."
-            className="flex-1 bg-nr-gray-900 border border-white/10 rounded-xl px-5 py-4 text-white placeholder:text-nr-gray-600 focus:outline-none focus:border-nr-red/50 focus:ring-1 focus:ring-nr-red/30 font-sans text-base transition-all"
+            className="flex-1 bg-nr-charcoal border border-white/10 rounded-xl px-5 py-4 text-white placeholder:text-nr-steel focus:outline-none focus:border-nr-red/50 focus:ring-1 focus:ring-nr-red/30 font-sans text-base transition-all"
             required
           />
           <button
@@ -82,7 +80,7 @@ export default function Home() {
                 setUrl(example.url)
                 router.push(`/transform?url=${encodeURIComponent(example.url)}`)
               }}
-              className="font-mono text-xs text-nr-gray-400 hover:text-nr-red border border-white/10 hover:border-nr-red/30 rounded-full px-4 py-2 transition-all"
+              className="font-mono text-xs text-nr-ash hover:text-nr-red border border-white/10 hover:border-nr-red/30 rounded-full px-4 py-2 transition-all"
             >
               Try: {example.label}
             </button>
@@ -91,7 +89,7 @@ export default function Home() {
 
         {/* Value prop */}
         <div className="max-w-xl mx-auto text-center">
-          <p className="text-nr-gray-400 text-sm leading-relaxed">
+          <p className="text-nr-ash text-sm leading-relaxed">
             Same journalism, 3-5x the engagement. Your article becomes swipeable slides
             with photos, quizzes, and interactive elements. Publish to Newsreel for free and reach thousands of readers.
           </p>
@@ -107,10 +105,10 @@ export default function Home() {
             { step: "02", title: "AI transforms it", desc: "Claude reads, extracts, and rewrites the article as interactive slides" },
             { step: "03", title: "Publish to Newsreel", desc: "Your story goes live on Newsreel and reaches 4,000+ daily readers. Optionally embed on your site too." },
           ].map((item) => (
-            <div key={item.step} className="bg-nr-gray-900 border border-white/10 rounded-2xl p-6">
+            <div key={item.step} className="bg-nr-charcoal border border-white/10 rounded-2xl p-6">
               <span className="font-mono text-nr-red text-sm">{item.step}</span>
               <h3 className="font-heading text-white text-xl mt-2 mb-2">{item.title}</h3>
-              <p className="text-nr-gray-400 text-sm">{item.desc}</p>
+              <p className="text-nr-ash text-sm">{item.desc}</p>
             </div>
           ))}
         </div>
@@ -118,7 +116,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-white/10 py-6 text-center">
-        <p className="text-nr-gray-600 text-sm font-mono">
+        <p className="text-nr-steel text-sm font-mono">
           Made by <span className="text-nr-red">Newsreel</span>
         </p>
       </footer>

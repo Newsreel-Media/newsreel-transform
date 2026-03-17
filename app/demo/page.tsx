@@ -1,7 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import SlideViewer from '@/components/SlideViewer'
+
+// Pre-generated demo story (hardcoded to avoid API calls on every page load)
+const DEMO_STORY = {"story_headline":"Oberlin Students Want Better Parties, Propose UN-Style Committee","subhead":"College party-goers pitch coordination system to fix scattered, unpredictable nightlife","source_name":"The Oberlin Review","slides":[{"subheadline":"The hook","content":"Oberlin College students are tired of trudging across campus to find the one decent party that hasn't been shut down yet. A frustrated party-goer has proposed creating a \"United Nations for partying\" to coordinate the school's scattered nightlife scene.","image_query":"college students party dancing"},{"subheadline":"Zoom out","content":"Unlike typical party schools with Greek life, Oberlin relies on athlete houses, jazz parties, and co-ops for nightlife. The problem: multiple houses throw competing parties on opposite sides of campus, leaving students gambling on which one won't flop or get busted.","image_query":"oberlin college campus night"},{"subheadline":"What to watch for","content":"The proposed United Nations for Partying (UNFP) would have house representatives vote on a single host each weekend, pooling resources for better events. The system would include safety features like age-identifying stamps, water stations, and quiet rooms for neurodivergent students.","image_query":"party planning committee meeting"},{"subheadline":"By the numbers","content":"With just 2,886 undergraduates total, Oberlin could theoretically accommodate everyone at coordinated parties with proper traffic management. The current system often forces disappointed party-goers to end up at the same backup location anyway.","image_query":"small college student body"},{"subheadline":"Food for thought","content":"The student argues Oberlin is missing out on rave culture, which historically centered on PLUR (peace, love, unity, respect) values in queer communities. These principles align perfectly with Oberlin's progressive student body, yet the school barely taps into this party tradition.","image_query":"rave culture peace love"}],"quiz":{"question":"What does PLUR stand for in rave culture?","answers":{"a":"Peace, love, unity, respect","b":"Party, laugh, unite, rave","c":"People, lights, unity, rhythm","d":"Progressive, loud, underground, radical"},"correct_answer":"a"},"guess":{"question":"Before you read: what do you think is the biggest problem with college parties?","options":["Too many at once","Not safe enough","Too boring"]},"quick_poll":{"question":"Should colleges coordinate parties centrally?","option_a":"Yes, better organization","option_b":"No, kills spontaneity"},"source_url":"https://oberlinreview.org/37345/opinions/oberlin-students-crave-the-rave-steps-we-should-take-to-improve-the-party-scene-of-oberlin-college/"}
 
 // Fake article content that looks like a real news site
 const ARTICLE = {
@@ -150,44 +153,9 @@ function ShareButtons() {
 }
 
 export default function DemoPage() {
-  const [story, setStory] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
-
-  useEffect(() => {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 60000)
-
-    fetch('/api/transform', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        url: 'https://oberlinreview.org/37345/opinions/oberlin-students-crave-the-rave-steps-we-should-take-to-improve-the-party-scene-of-oberlin-college/',
-      }),
-      signal: controller.signal,
-    })
-      .then(r => {
-        if (!r.ok) throw new Error('Transform failed')
-        return r.json()
-      })
-      .then(data => {
-        if (data.story) {
-          setStory(data.story)
-        } else {
-          setError(true)
-        }
-        setLoading(false)
-      })
-      .catch(() => {
-        setError(true)
-        setLoading(false)
-      })
-
-    return () => {
-      clearTimeout(timeout)
-      controller.abort()
-    }
-  }, [])
+  const [story] = useState<any>(DEMO_STORY)
+  const [loading] = useState(false)
+  const [error] = useState(false)
 
   return (
     <div style={{ background: '#fff', minHeight: '100vh' }}>
