@@ -196,7 +196,7 @@ function PhotoSearchOverlay({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,video/*"
         className="hidden"
         onChange={handleFileUpload}
       />
@@ -309,8 +309,8 @@ function PhotoSearchOverlay({
                 <polyline points="17,8 12,3 7,8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 <line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              <span className="text-white/70 text-sm font-mono">Tap to upload a photo</span>
-              <span className="text-white/30 text-xs font-mono">JPG, PNG, GIF, WebP</span>
+              <span className="text-white/70 text-sm font-mono">Tap to upload a photo or video</span>
+              <span className="text-white/30 text-xs font-mono">JPG, PNG, GIF, WebP, MP4, MOV</span>
             </button>
           </div>
         )}
