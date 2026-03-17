@@ -53,15 +53,15 @@ type EditMode = null | "photo" | "text" | "record" | "chart"
 
 // ─── Constants ───────────────────────────────────────────────────────
 const GRADIENTS = [
-  "linear-gradient(160deg, #0a0a0a 0%, #1a1a3e 50%, #16214e 100%)",
-  "linear-gradient(135deg, #0f0f0f 0%, #3d1b3e 50%, #2a0a2e 100%)",
-  "linear-gradient(150deg, #000000 0%, #1a3a1a 50%, #0f2f0f 100%)",
-  "linear-gradient(140deg, #0a0a0a 0%, #3a2a0a 50%, #2f2a0f 100%)",
-  "linear-gradient(160deg, #0f0f0f 0%, #0a1a3a 50%, #1a3a5a 100%)",
-  "linear-gradient(135deg, #000000 0%, #2f0f2f 50%, #3a1a3a 100%)",
-  "linear-gradient(145deg, #0a0a0a 0%, #0a3a3a 50%, #1a2a2a 100%)",
-  "linear-gradient(155deg, #0f0f0f 0%, #3a1a1a 50%, #2a0f0f 100%)",
-  "linear-gradient(130deg, #000000 0%, #1a2a3a 50%, #2a3a4a 100%)",
+  "linear-gradient(160deg, #0a0a0a 0%, #2a2a6e 50%, #1e2160 100%)",
+  "linear-gradient(135deg, #0f0f0f 0%, #6d2b5e 50%, #3a0a3e 100%)",
+  "linear-gradient(150deg, #000000 0%, #1a5a2a 50%, #0f3f1f 100%)",
+  "linear-gradient(140deg, #0a0a0a 0%, #5a4a1a 50%, #3f3a0f 100%)",
+  "linear-gradient(160deg, #0f0f0f 0%, #1a3a6a 50%, #2a4a7a 100%)",
+  "linear-gradient(135deg, #000000 0%, #4f1f4f 50%, #5a2a5a 100%)",
+  "linear-gradient(145deg, #0a0a0a 0%, #1a5a5a 50%, #2a4a4a 100%)",
+  "linear-gradient(155deg, #0f0f0f 0%, #5a2a2a 50%, #4a1f1f 100%)",
+  "linear-gradient(130deg, #000000 0%, #2a3a5a 50%, #3a4a6a 100%)",
 ]
 
 function getIcon(subheadline: string): string {
@@ -614,6 +614,7 @@ export default function StoryEditor({
   const [showRecorder, setShowRecorder] = useState(false)
   const [slideStats, setSlideStats] = useState<Record<number, StatOverlay>>({})
   const [keyboardOpen, setKeyboardOpen] = useState(false)
+  const [keyboardHeight, setKeyboardHeight] = useState(280)
   const scrollRef = useRef<HTMLDivElement>(null)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
@@ -622,7 +623,11 @@ export default function StoryEditor({
     const vv = window.visualViewport
     if (!vv) return
     const handler = () => {
-      setKeyboardOpen(vv.height < window.innerHeight * 0.75)
+      const isOpen = vv.height < window.innerHeight * 0.75
+      setKeyboardOpen(isOpen)
+      if (isOpen) {
+        setKeyboardHeight(Math.round(window.innerHeight - vv.height))
+      }
     }
     vv.addEventListener("resize", handler)
     return () => vv.removeEventListener("resize", handler)
@@ -1495,7 +1500,7 @@ export default function StoryEditor({
               })()}
 
               {/* Content card at bottom */}
-              <div className={`absolute bottom-0 left-0 right-0 p-5 relative z-10 ${keyboardOpen ? "pb-[280px]" : "pb-16"}`}>
+              <div className="absolute bottom-0 left-0 right-0 p-5 relative z-10" style={{ paddingBottom: keyboardOpen ? keyboardHeight + 16 : 64 }}>
                 <div className="glass-card rounded-2xl p-5">
                   <EditableText
                     value={`${getIcon(slide.subheadline)} ${slide.subheadline}`}
@@ -1611,14 +1616,14 @@ export default function StoryEditor({
 
       {/* Keyboard dismiss bar */}
       {keyboardOpen && (
-        <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-end px-4 py-2 bg-black/90 backdrop-blur-sm border-b border-white/10">
+        <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-end px-4 bg-black/90 backdrop-blur-sm border-b border-white/10" style={{ paddingTop: 'max(8px, env(safe-area-inset-top))' , paddingBottom: '8px' }}>
           <button
             onClick={() => {
               if (document.activeElement instanceof HTMLElement) {
                 document.activeElement.blur()
               }
             }}
-            className="text-white text-sm font-mono px-3 py-1 rounded-lg hover:bg-white/10 transition-colors min-h-[36px]"
+            className="text-white text-sm font-mono px-4 py-2 rounded-lg hover:bg-white/10 transition-colors min-h-[44px] flex items-center"
           >
             Done
           </button>
