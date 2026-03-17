@@ -53,12 +53,15 @@ type EditMode = null | "photo" | "text" | "record" | "chart"
 
 // ─── Constants ───────────────────────────────────────────────────────
 const GRADIENTS = [
-  "linear-gradient(160deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%)",
-  "linear-gradient(135deg, #0f0f0f 0%, #2d1b2e 50%, #1a0a1e 100%)",
-  "linear-gradient(150deg, #000000 0%, #1a2a1a 50%, #0f1f0f 100%)",
-  "linear-gradient(140deg, #0a0a0a 0%, #2a1a0a 50%, #1f1a0f 100%)",
-  "linear-gradient(160deg, #0f0f0f 0%, #0a1a2a 50%, #1a2a3a 100%)",
-  "linear-gradient(135deg, #000000 0%, #1f0f1f 50%, #2a1a2a 100%)",
+  "linear-gradient(160deg, #0a0a0a 0%, #1a1a3e 50%, #16214e 100%)",
+  "linear-gradient(135deg, #0f0f0f 0%, #3d1b3e 50%, #2a0a2e 100%)",
+  "linear-gradient(150deg, #000000 0%, #1a3a1a 50%, #0f2f0f 100%)",
+  "linear-gradient(140deg, #0a0a0a 0%, #3a2a0a 50%, #2f2a0f 100%)",
+  "linear-gradient(160deg, #0f0f0f 0%, #0a1a3a 50%, #1a3a5a 100%)",
+  "linear-gradient(135deg, #000000 0%, #2f0f2f 50%, #3a1a3a 100%)",
+  "linear-gradient(145deg, #0a0a0a 0%, #0a3a3a 50%, #1a2a2a 100%)",
+  "linear-gradient(155deg, #0f0f0f 0%, #3a1a1a 50%, #2a0f0f 100%)",
+  "linear-gradient(130deg, #000000 0%, #1a2a3a 50%, #2a3a4a 100%)",
 ]
 
 function getIcon(subheadline: string): string {
@@ -135,11 +138,13 @@ function PhotoSearchOverlay({
   const [loading, setLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const hasMountSearched = useRef(false)
+
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
 
-  const search = async () => {
+  const search = useCallback(async () => {
     if (!query.trim()) return
     setLoading(true)
     try {
@@ -151,7 +156,16 @@ function PhotoSearchOverlay({
     } finally {
       setLoading(false)
     }
-  }
+  }, [query])
+
+  // Auto-search on mount if defaultQuery is non-empty
+  useEffect(() => {
+    if (defaultQuery.trim() && !hasMountSearched.current) {
+      hasMountSearched.current = true
+      search()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultQuery])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -456,7 +470,7 @@ function EditToolbar({
 
   return (
     <div className="absolute bottom-[48px] left-0 right-0 z-30">
-      <div className="flex items-center justify-center gap-1 px-3 py-2 bg-black/80 backdrop-blur-md border-t border-white/10">
+      <div className="flex items-center justify-center gap-2 px-3 py-2 bg-black/80 backdrop-blur-md border-t border-white/10">
         {buttons.map((btn) => (
           <div key={btn.label} className="relative">
             <button
@@ -533,6 +547,12 @@ function EditableText({
         contentEditable: true as const,
         suppressContentEditableWarning: true as const,
         onBlur: handleBlur,
+        onFocus: (e: React.FocusEvent) => {
+          // Scroll element into view when keyboard opens on mobile
+          setTimeout(() => {
+            (e.target as HTMLElement).scrollIntoView({ block: "center", behavior: "smooth" })
+          }, 300)
+        },
         onKeyDown: (e: React.KeyboardEvent) => {
           // Prevent slide nav while editing
           e.stopPropagation()
@@ -544,9 +564,10 @@ function EditableText({
         style: {
           outline: "none",
           cursor: "text" as const,
-          borderBottom: "1px dashed rgba(255,255,255,0.2)",
+          borderBottom: "2px dashed rgba(255,255,255,0.4)",
           borderRadius: 2,
-          paddingBottom: 1,
+          paddingBottom: 2,
+          background: "rgba(255,255,255,0.05)",
         },
       }
     : {}
@@ -666,7 +687,7 @@ export default function StoryEditor({
   // Error state: no slides
   if (!story.slides || story.slides.length === 0) {
     return (
-      <div className="w-[393px] h-[700px] bg-black rounded-[2rem] flex flex-col items-center justify-center px-6">
+      <div className="w-full max-w-[393px] h-[700px] bg-black rounded-[2rem] flex flex-col items-center justify-center px-6">
         <div className="w-12 h-12 rounded-2xl bg-red-500/20 flex items-center justify-center mb-6">
           <span className="text-red-500 text-xl">!</span>
         </div>
@@ -767,6 +788,11 @@ export default function StoryEditor({
     }
     const handleTouchEnd = (e: TouchEvent) => {
       if (!touchStartRef.current) return
+      // Skip swipe navigation if user is editing text
+      if (document.activeElement?.getAttribute("contenteditable") === "true") {
+        touchStartRef.current = null
+        return
+      }
       const dx = e.changedTouches[0].clientX - touchStartRef.current.x
       const dy = e.changedTouches[0].clientY - touchStartRef.current.y
       if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
@@ -862,7 +888,7 @@ export default function StoryEditor({
         <button
           onClick={() => setShowToolbar(true)}
           aria-label="Edit story"
-          className="sm:hidden absolute bottom-[52px] right-4 z-30 font-mono text-[12px] px-3 py-1.5 rounded-full transition-all min-h-[32px] flex items-center gap-1.5 bg-black/50 backdrop-blur-sm text-white/70 border border-white/20 active:text-white active:border-white/40"
+          className="sm:hidden absolute bottom-[52px] right-4 z-30 font-mono text-[12px] px-4 py-2.5 rounded-full transition-all min-h-[44px] flex items-center gap-1.5 bg-black/50 backdrop-blur-sm text-white/70 border border-white/20 active:text-white active:border-white/40"
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M10.08 1.92a1.5 1.5 0 012.12 0l.88.88a1.5 1.5 0 010 2.12L5.5 12.5 1.5 13l.5-4 8.08-7.08z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1469,7 +1495,7 @@ export default function StoryEditor({
               })()}
 
               {/* Content card at bottom */}
-              <div className="absolute bottom-0 left-0 right-0 p-5 pb-16 relative z-10">
+              <div className={`absolute bottom-0 left-0 right-0 p-5 relative z-10 ${keyboardOpen ? "pb-[280px]" : "pb-16"}`}>
                 <div className="glass-card rounded-2xl p-5">
                   <EditableText
                     value={`${getIcon(slide.subheadline)} ${slide.subheadline}`}
@@ -1510,7 +1536,7 @@ export default function StoryEditor({
       {currentSlide > 0 && (
         <button
           onClick={goPrev}
-          className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-black/50 text-white/70 hover:text-white transition-all"
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-11 h-11 flex items-center justify-center rounded-full bg-black/50 text-white/70 hover:text-white transition-all"
           aria-label="Previous slide"
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -1521,7 +1547,7 @@ export default function StoryEditor({
       {currentSlide < totalPages - 1 && (
         <button
           onClick={goNext}
-          className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-black/50 text-white/70 hover:text-white transition-all"
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-11 h-11 flex items-center justify-center rounded-full bg-black/50 text-white/70 hover:text-white transition-all"
           aria-label="Next slide"
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -1582,6 +1608,22 @@ export default function StoryEditor({
           Share
         </button>
       </div>
+
+      {/* Keyboard dismiss bar */}
+      {keyboardOpen && (
+        <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-end px-4 py-2 bg-black/90 backdrop-blur-sm border-b border-white/10">
+          <button
+            onClick={() => {
+              if (document.activeElement instanceof HTMLElement) {
+                document.activeElement.blur()
+              }
+            }}
+            className="text-white text-sm font-mono px-3 py-1 rounded-lg hover:bg-white/10 transition-colors min-h-[36px]"
+          >
+            Done
+          </button>
+        </div>
+      )}
 
       {/* Video Recorder Modal */}
       {showRecorder && (

@@ -38,12 +38,15 @@ interface Story {
 
 // Gradient palette for slide backgrounds (dark with subtle color personality)
 const GRADIENTS = [
-  "linear-gradient(160deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%)",
-  "linear-gradient(135deg, #0f0f0f 0%, #2d1b2e 50%, #1a0a1e 100%)",
-  "linear-gradient(150deg, #000000 0%, #1a2a1a 50%, #0f1f0f 100%)",
-  "linear-gradient(140deg, #0a0a0a 0%, #2a1a0a 50%, #1f1a0f 100%)",
-  "linear-gradient(160deg, #0f0f0f 0%, #0a1a2a 50%, #1a2a3a 100%)",
-  "linear-gradient(135deg, #000000 0%, #1f0f1f 50%, #2a1a2a 100%)",
+  "linear-gradient(160deg, #0a0a0a 0%, #1a1a3e 50%, #16214e 100%)",
+  "linear-gradient(135deg, #0f0f0f 0%, #3d1b3e 50%, #2a0a2e 100%)",
+  "linear-gradient(150deg, #000000 0%, #1a3a1a 50%, #0f2f0f 100%)",
+  "linear-gradient(140deg, #0a0a0a 0%, #3a2a0a 50%, #2f2a0f 100%)",
+  "linear-gradient(160deg, #0f0f0f 0%, #0a1a3a 50%, #1a3a5a 100%)",
+  "linear-gradient(135deg, #000000 0%, #2f0f2f 50%, #3a1a3a 100%)",
+  "linear-gradient(145deg, #0a0a0a 0%, #0a3a3a 50%, #1a2a2a 100%)",
+  "linear-gradient(155deg, #0f0f0f 0%, #3a1a1a 50%, #2a0f0f 100%)",
+  "linear-gradient(130deg, #000000 0%, #1a2a3a 50%, #2a3a4a 100%)",
 ]
 
 // Subheadline icon mapping
