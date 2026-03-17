@@ -136,13 +136,23 @@ function PhotoSearchOverlay({
   const [query, setQuery] = useState(defaultQuery)
   const [results, setResults] = useState<Array<{ url: string; thumbnail: string }>>([])
   const [loading, setLoading] = useState(false)
+  const [mobileTab, setMobileTab] = useState<"search" | "upload">("search")
   const inputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const hasMountSearched = useRef(false)
 
   useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
+    if (mobileTab === "search") inputRef.current?.focus()
+  }, [mobileTab])
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const objectUrl = URL.createObjectURL(file)
+      onSelect(objectUrl)
+    }
+  }
 
   const search = useCallback(async () => {
     if (!query.trim()) return
@@ -182,41 +192,46 @@ function PhotoSearchOverlay({
 
   return (
     <>
+      {/* Hidden file input for upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileUpload}
+      />
+
       {/* Mobile: full-screen fixed modal */}
       <div
         className="sm:hidden fixed inset-0 z-50 bg-black/95 flex flex-col"
         style={{ height: "100dvh", paddingBottom: "env(safe-area-inset-bottom)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header with search input */}
-        <div className="flex items-center gap-2 p-3 pt-[max(12px,env(safe-area-inset-top))] border-b border-white/10 bg-black">
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Search photos..."
-            className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-white/40"
-          />
+        {/* Tab toggle: Search | Upload */}
+        <div className="flex border-b border-white/10 bg-black pt-[max(8px,env(safe-area-inset-top))]">
           <button
-            onClick={search}
-            className="px-3 py-2.5 bg-nr-red rounded-lg text-white text-sm font-mono hover:bg-nr-red/80 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            onClick={() => setMobileTab("search")}
+            className={`flex-1 py-2.5 text-sm font-mono tracking-wider transition-colors ${
+              mobileTab === "search"
+                ? "text-white border-b-2 border-nr-red"
+                : "text-white/40 hover:text-white/60"
+            }`}
           >
-            {loading ? (
-              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="32" strokeLinecap="round" />
-              </svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
-                <path d="M11 11L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-            )}
+            Search
+          </button>
+          <button
+            onClick={() => setMobileTab("upload")}
+            className={`flex-1 py-2.5 text-sm font-mono tracking-wider transition-colors ${
+              mobileTab === "upload"
+                ? "text-white border-b-2 border-nr-red"
+                : "text-white/40 hover:text-white/60"
+            }`}
+          >
+            Upload
           </button>
           <button
             onClick={onClose}
-            className="px-2 py-2.5 text-white/50 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="px-4 py-2.5 text-white/50 hover:text-white transition-colors"
           >
             <svg width="20" height="20" viewBox="0 0 16 16" fill="none">
               <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -224,39 +239,87 @@ function PhotoSearchOverlay({
           </button>
         </div>
 
-        {/* Results grid - scrollable area fills remaining space */}
-        <div className="flex-1 overflow-y-auto p-3">
-          {results.length > 0 && (
-            <div className="grid grid-cols-3 gap-2">
-              {results.map((r, i) => (
-                <button
-                  key={i}
-                  onClick={() => onSelect(r.url)}
-                  className="aspect-square rounded-lg overflow-hidden hover:ring-2 hover:ring-nr-red transition-all"
-                >
-                  <img
-                    src={r.thumbnail}
-                    alt=""
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                </button>
-              ))}
+        {mobileTab === "search" ? (
+          <>
+            {/* Header with search input */}
+            <div className="flex items-center gap-2 p-3 border-b border-white/10 bg-black">
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Search photos..."
+                className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-white/40"
+              />
+              <button
+                onClick={search}
+                className="px-3 py-2.5 bg-nr-red rounded-lg text-white text-sm font-mono hover:bg-nr-red/80 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+              >
+                {loading ? (
+                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="32" strokeLinecap="round" />
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M11 11L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                )}
+              </button>
             </div>
-          )}
 
-          {results.length === 0 && !loading && query && (
-            <p className="text-white/60 text-xs font-mono text-center py-8">
-              Hit enter or tap search to find photos
-            </p>
-          )}
-        </div>
+            {/* Results grid - scrollable area fills remaining space */}
+            <div className="flex-1 overflow-y-auto p-3">
+              {results.length > 0 && (
+                <div className="grid grid-cols-3 gap-2">
+                  {results.map((r, i) => (
+                    <button
+                      key={i}
+                      onClick={() => onSelect(r.url)}
+                      className="aspect-square rounded-lg overflow-hidden hover:ring-2 hover:ring-nr-red transition-all"
+                    >
+                      <img
+                        src={r.thumbnail}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {results.length === 0 && !loading && query && (
+                <p className="text-white/60 text-xs font-mono text-center py-8">
+                  Hit enter or tap search to find photos
+                </p>
+              )}
+            </div>
+          </>
+        ) : (
+          /* Upload tab content */
+          <div className="flex-1 flex flex-col items-center justify-center p-6">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex flex-col items-center gap-3 p-8 rounded-2xl border-2 border-dashed border-white/20 hover:border-white/40 transition-colors w-full max-w-[280px]"
+            >
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="text-white/60">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <polyline points="17,8 12,3 7,8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="text-white/70 text-sm font-mono">Tap to upload a photo</span>
+              <span className="text-white/30 text-xs font-mono">JPG, PNG, GIF, WebP</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Desktop (sm+): inline overlay at top of slide */}
       <div className="hidden sm:block absolute inset-x-0 top-0 z-50 p-3" onClick={(e) => e.stopPropagation()}>
         <div className="glass-card rounded-xl p-3">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-1">
             <input
               type="text"
               value={query}
@@ -289,6 +352,18 @@ function PhotoSearchOverlay({
               </svg>
             </button>
           </div>
+
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="text-white/40 hover:text-white/70 text-xs font-mono mb-2 flex items-center gap-1 transition-colors"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <polyline points="17,8 12,3 7,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            or upload
+          </button>
 
           {results.length > 0 && (
             <div className="grid grid-cols-4 gap-1.5 max-h-[160px] overflow-y-auto">
