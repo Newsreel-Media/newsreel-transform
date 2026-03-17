@@ -718,8 +718,8 @@ export default function SlideViewer({ story }: { story: Story }) {
                 </div>
               )}
 
-              {/* Content card at bottom */}
-              <div className="absolute bottom-0 left-0 right-0 p-5 pb-16 relative z-10">
+              {/* Content card at bottom — narrower when PiP video exists */}
+              <div className={`absolute bottom-0 left-0 right-0 p-5 pb-16 relative z-10 ${slideVideos[page.index!] ? 'pr-[148px]' : ''}`}>
                 <div className="glass-card rounded-2xl p-5">
                   <p className="font-mono text-white/80 text-xs tracking-wider mb-2">
                     {getIcon(slide.subheadline)} {slide.subheadline}

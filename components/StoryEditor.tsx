@@ -1694,8 +1694,8 @@ export default function StoryEditor({
                 </div>
               )}
 
-              {/* Content card at bottom */}
-              <div className="absolute bottom-0 left-0 right-0 p-5 relative z-10" style={{ paddingBottom: keyboardOpen ? keyboardHeight + 16 : 64 }}>
+              {/* Content card at bottom — narrower when PiP video exists */}
+              <div className={`absolute bottom-0 left-0 right-0 p-5 relative z-10 ${slideVideos[slideIndex] ? 'pr-[148px]' : ''}`} style={{ paddingBottom: keyboardOpen ? keyboardHeight + 16 : 64 }}>
                 <div className="glass-card rounded-2xl p-5">
                   <EditableText
                     value={`${getIcon(slide.subheadline)} ${slide.subheadline}`}
