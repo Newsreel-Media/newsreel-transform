@@ -34,99 +34,115 @@ export async function GET(request: NextRequest) {
 }
 
 async function searchOpenverse(query: string) {
-  const params = new URLSearchParams({
-    q: query,
-    page_size: '3',
-    license_type: 'commercial',
-    mature: 'false',
-  })
+  try {
+    const params = new URLSearchParams({
+      q: query,
+      page_size: '3',
+      license_type: 'commercial',
+      mature: 'false',
+    })
 
-  const res = await fetch(`https://api.openverse.org/v1/images/?${params}`, {
-    headers: { 'User-Agent': 'NewsreelTransform/1.0 (https://newsreel.co)' },
-  })
+    const res = await fetch(`https://api.openverse.org/v1/images/?${params}`, {
+      headers: { 'User-Agent': 'NewsreelTransform/1.0 (https://newsreel.co)' },
+    })
 
-  if (!res.ok) return NextResponse.json({ url: null })
+    if (!res.ok) return NextResponse.json({ url: null })
 
-  const data = await res.json()
-  const results = data.results || []
-  if (results.length === 0) return NextResponse.json({ url: null })
+    const data = await res.json()
+    const results = data.results || []
+    if (results.length === 0) return NextResponse.json({ url: null })
 
-  const best = results[0]
-  return NextResponse.json({
-    url: best.url || best.thumbnail,
-    thumbnail: best.thumbnail || best.url,
-    type: 'photo',
-    attribution: best.attribution || (best.creator ? `${best.creator} via ${best.source}` : best.source),
-  })
+    const best = results[0]
+    return NextResponse.json({
+      url: best.url || best.thumbnail,
+      thumbnail: best.thumbnail || best.url,
+      type: 'photo',
+      attribution: best.attribution || (best.creator ? `${best.creator} via ${best.source}` : best.source),
+    })
+  } catch {
+    return NextResponse.json({ url: null })
+  }
 }
 
 async function searchGiphy(query: string) {
-  const params = new URLSearchParams({
-    api_key: GIPHY_KEY,
-    q: query,
-    limit: '3',
-    rating: 'pg',
-  })
+  try {
+    const params = new URLSearchParams({
+      api_key: GIPHY_KEY,
+      q: query,
+      limit: '3',
+      rating: 'pg',
+    })
 
-  const res = await fetch(`https://api.giphy.com/v1/gifs/search?${params}`)
-  if (!res.ok) return NextResponse.json({ url: null })
+    const res = await fetch(`https://api.giphy.com/v1/gifs/search?${params}`)
+    if (!res.ok) return NextResponse.json({ url: null })
 
-  const data = await res.json()
-  const results = data.data || []
-  if (results.length === 0) return NextResponse.json({ url: null })
+    const data = await res.json()
+    const results = data.data || []
+    if (results.length === 0) return NextResponse.json({ url: null })
 
-  const best = results[0]
-  return NextResponse.json({
-    url: best.images?.original?.url || best.images?.downsized?.url,
-    thumbnail: best.images?.fixed_width?.url || best.images?.downsized?.url,
-    type: 'gif',
-    attribution: 'GIPHY',
-  })
+    const best = results[0]
+    return NextResponse.json({
+      url: best.images?.original?.url || best.images?.downsized?.url,
+      thumbnail: best.images?.fixed_width?.url || best.images?.downsized?.url,
+      type: 'gif',
+      attribution: 'GIPHY',
+    })
+  } catch {
+    return NextResponse.json({ url: null })
+  }
 }
 
 async function searchOpenverseMulti(query: string, count: number) {
-  const params = new URLSearchParams({
-    q: query,
-    page_size: String(Math.min(count, 12)),
-    license_type: 'commercial',
-    mature: 'false',
-  })
+  try {
+    const params = new URLSearchParams({
+      q: query,
+      page_size: String(Math.min(count, 12)),
+      license_type: 'commercial',
+      mature: 'false',
+    })
 
-  const res = await fetch(`https://api.openverse.org/v1/images/?${params}`, {
-    headers: { 'User-Agent': 'NewsreelTransform/1.0 (https://newsreel.co)' },
-  })
+    const res = await fetch(`https://api.openverse.org/v1/images/?${params}`, {
+      headers: { 'User-Agent': 'NewsreelTransform/1.0 (https://newsreel.co)' },
+    })
 
-  if (!res.ok) return NextResponse.json({ results: [] })
+    if (!res.ok) return NextResponse.json({ results: [] })
 
-  const data = await res.json()
-  const results = (data.results || []).map((r: any) => ({
-    url: r.url || r.thumbnail,
-    thumbnail: r.thumbnail || r.url,
-    type: 'photo' as const,
-    attribution: r.attribution || (r.creator ? `${r.creator} via ${r.source}` : r.source),
-  }))
+    const data = await res.json()
+    const results = (data.results || []).map((r: any) => ({
+      url: r.url || r.thumbnail,
+      thumbnail: r.thumbnail || r.url,
+      type: 'photo' as const,
+      attribution: r.attribution || (r.creator ? `${r.creator} via ${r.source}` : r.source),
+    }))
 
-  return NextResponse.json({ results })
+    return NextResponse.json({ results })
+  } catch {
+    return NextResponse.json({ results: [] })
+  }
 }
 
 async function searchGiphyMulti(query: string, count: number) {
-  const params = new URLSearchParams({
-    api_key: GIPHY_KEY,
-    q: query,
-    limit: String(Math.min(count, 12)),
-    rating: 'pg',
-  })
+  try {
+    const params = new URLSearchParams({
+      api_key: GIPHY_KEY,
+      q: query,
+      limit: String(Math.min(count, 12)),
+      rating: 'pg',
+    })
 
-  const res = await fetch(`https://api.giphy.com/v1/gifs/search?${params}`)
-  if (!res.ok) return NextResponse.json({ results: [] })
+    const res = await fetch(`https://api.giphy.com/v1/gifs/search?${params}`)
+    if (!res.ok) return NextResponse.json({ results: [] })
 
-  const data = await res.json()
-  const results = (data.data || []).map((r: any) => ({
-    url: r.images?.original?.url || r.images?.downsized?.url,
-    thumbnail: r.images?.fixed_width?.url || r.images?.downsized?.url,
-    type: 'gif' as const,
-    attribution: 'GIPHY',
-  }))
+    const data = await res.json()
+    const results = (data.data || []).map((r: any) => ({
+      url: r.images?.original?.url || r.images?.downsized?.url,
+      thumbnail: r.images?.fixed_width?.url || r.images?.downsized?.url,
+      type: 'gif' as const,
+      attribution: 'GIPHY',
+    }))
 
-  return NextResponse.json({ results })
+    return NextResponse.json({ results })
+  } catch {
+    return NextResponse.json({ results: [] })
+  }
 }

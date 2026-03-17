@@ -18,6 +18,7 @@ function TransformContent() {
   const [story, setStory] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadingMessage, setLoadingMessage] = useState("Transforming your article...")
   const [copied, setCopied] = useState(false)
   const [showPublishForm, setShowPublishForm] = useState(false)
   const [published, setPublished] = useState(false)
@@ -40,6 +41,19 @@ function TransformContent() {
     }
 
     const transform = async () => {
+      // Progressive loading messages
+      const timer5s = setTimeout(() => {
+        setLoadingMessage("Still working...")
+      }, 5000)
+      const timer15s = setTimeout(() => {
+        setLoadingMessage("This is taking longer than usual...")
+      }, 15000)
+      // Hard 45-second timeout so loading never gets stuck
+      const timer45s = setTimeout(() => {
+        setError("Transform timed out. Please try again or use a different article.")
+        setLoading(false)
+      }, 45000)
+
       try {
         const res = await fetch("/api/transform", {
           method: "POST",
@@ -63,6 +77,9 @@ function TransformContent() {
       } catch (err: any) {
         setError(err.message || "Something went wrong")
       } finally {
+        clearTimeout(timer5s)
+        clearTimeout(timer15s)
+        clearTimeout(timer45s)
         setLoading(false)
       }
     }
@@ -104,7 +121,7 @@ function TransformContent() {
         <div className="w-12 h-12 rounded-2xl bg-nr-red/20 flex items-center justify-center mb-6 animate-pulse-glow">
           <div className="w-6 h-6 rounded-lg bg-nr-red" />
         </div>
-        <h2 className="font-heading text-xl text-white mb-2">Transforming your article...</h2>
+        <h2 className="font-heading text-xl text-white mb-2">{loadingMessage}</h2>
         <p className="text-nr-gray-400 text-sm font-sans text-center max-w-sm">
           Fetching, extracting, and rewriting as an interactive story. This takes about 10 seconds.
         </p>

@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
 
     if (!text || text.length < 50) {
       return NextResponse.json(
-        { error: "Could not extract enough text from this article. The page may be behind a paywall or use heavy JavaScript rendering." },
+        { error: "This page doesn't have enough article content. It may be behind a paywall or use heavy JavaScript rendering." },
         { status: 422 }
       )
     }
@@ -222,9 +222,9 @@ CRITICAL RULES:
 - Include a quiz, a guess question, and a quick_poll
 - Return ONLY valid JSON`
 
-    // Call Claude
+    // Call Claude with a 30-second timeout
     const anthropic = new Anthropic({ apiKey })
-    const message = await anthropic.messages.create({
+    const claudePromise = anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 2000,
       messages: [
@@ -232,6 +232,20 @@ CRITICAL RULES:
       ],
       system: SYSTEM_PROMPT,
     })
+
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Claude API timed out after 30 seconds")), 30000)
+    )
+
+    let message: Anthropic.Message
+    try {
+      message = await Promise.race([claudePromise, timeoutPromise])
+    } catch (timeoutErr: any) {
+      return NextResponse.json(
+        { error: timeoutErr.message || "The AI took too long to respond. Please try again." },
+        { status: 504 }
+      )
+    }
 
     const content = message.content[0]
     if (content.type !== "text") {
@@ -243,7 +257,24 @@ CRITICAL RULES:
       cleaned = cleaned.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "")
     }
 
-    const storyData = JSON.parse(cleaned)
+    let storyData: any
+    try {
+      storyData = JSON.parse(cleaned)
+    } catch {
+      return NextResponse.json(
+        { error: "The AI returned an invalid response. Please try again." },
+        { status: 502 }
+      )
+    }
+
+    // Default missing image_query to the story headline
+    if (storyData.slides && Array.isArray(storyData.slides)) {
+      for (const slide of storyData.slides) {
+        if (!slide.image_query) {
+          slide.image_query = storyData.story_headline || title || "news"
+        }
+      }
+    }
 
     // Add source URL
     storyData.source_url = url

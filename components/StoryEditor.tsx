@@ -561,6 +561,21 @@ export default function StoryEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Error state: no slides
+  if (!story.slides || story.slides.length === 0) {
+    return (
+      <div className="w-[393px] h-[700px] bg-black rounded-[2rem] flex flex-col items-center justify-center px-6">
+        <div className="w-12 h-12 rounded-2xl bg-red-500/20 flex items-center justify-center mb-6">
+          <span className="text-red-500 text-xl">!</span>
+        </div>
+        <h2 className="font-heading text-xl text-white mb-2">No slides generated</h2>
+        <p className="text-white/50 text-sm font-sans text-center">
+          The story could not be created. Try a different article.
+        </p>
+      </div>
+    )
+  }
+
   // Page list
   const pages: Array<{ type: "headline" | "slide" | "guess" | "quiz" | "quick_poll" | "completion" | "sponsored"; index?: number }> = []
   // Headline card is always first
@@ -1340,7 +1355,7 @@ export default function StoryEditor({
                     tag="p"
                   />
                   <EditableText
-                    value={slide.content}
+                    value={slide.content || "No content for this slide"}
                     onChange={(v) =>
                       updateStory((s) => {
                         const slides = [...s.slides]
@@ -1349,7 +1364,7 @@ export default function StoryEditor({
                       })
                     }
                     editable={isTextEditable}
-                    className="font-sans text-white text-[15px] leading-relaxed"
+                    className={`font-sans text-[15px] leading-relaxed ${slide.content ? "text-white" : "text-white/40 italic"}`}
                     tag="p"
                   />
                 </div>
