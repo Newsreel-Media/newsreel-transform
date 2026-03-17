@@ -36,16 +36,14 @@ interface Story {
   quick_poll?: QuickPoll
 }
 
-// Gradient palette for slide backgrounds
+// Gradient palette for slide backgrounds (on-brand Newsreel neutrals)
 const GRADIENTS = [
-  "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
-  "linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)",
-  "linear-gradient(135deg, #1a0a2e 0%, #3d1f5c 50%, #1a1a2e 100%)",
-  "linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%)",
-  "linear-gradient(135deg, #1e1e2f 0%, #2d1b4e 50%, #1a1a2e 100%)",
-  "linear-gradient(135deg, #0a0a1a 0%, #1a2a3a 50%, #0a1a2a 100%)",
-  "linear-gradient(135deg, #111827 0%, #1f2937 50%, #111827 100%)",
-  "linear-gradient(135deg, #1a1a2e 0%, #2a1a3e 50%, #1a0a2e 100%)",
+  "linear-gradient(135deg, #000000 0%, #0F0F0F 50%, #1F1F1F 100%)",
+  "linear-gradient(135deg, #0F0F0F 0%, #1F1F1F 50%, #0F0F0F 100%)",
+  "linear-gradient(135deg, #1F1F1F 0%, #0F0F0F 50%, #000000 100%)",
+  "linear-gradient(135deg, #000000 0%, #1F1F1F 50%, #3A3A3A 100%)",
+  "linear-gradient(135deg, #0F0F0F 0%, #3A3A3A 50%, #1F1F1F 100%)",
+  "linear-gradient(135deg, #1F1F1F 0%, #000000 50%, #0F0F0F 100%)",
 ]
 
 // Subheadline icon mapping
@@ -363,10 +361,10 @@ export default function SlideViewer({ story }: { story: Story }) {
                   )}
                   {/* Swipe hint */}
                   <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-[10px] text-white/40 uppercase tracking-wider">
+                    <span className="font-mono text-[10px] text-white/60 uppercase tracking-wider">
                       Swipe to read
                     </span>
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-white/40">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-white/60">
                       <path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </div>
@@ -397,6 +395,7 @@ export default function SlideViewer({ story }: { story: Story }) {
                           setGuessAnswer(opt)
                           setTimeout(goNext, 600)
                         }}
+                        aria-label={opt}
                         className={`text-left px-4 py-3 rounded-xl border transition-all text-sm font-sans ${
                           guessAnswer === opt
                             ? "border-nr-yellow bg-nr-yellow/10 text-nr-yellow"
@@ -453,6 +452,7 @@ export default function SlideViewer({ story }: { story: Story }) {
                           key={key}
                           onClick={() => !quizAnswer && setQuizAnswer(key)}
                           disabled={!!quizAnswer}
+                          aria-label={quiz.answers[key]}
                           className={`text-left px-4 py-3 rounded-xl border transition-all text-sm font-sans ${borderColor} ${bgColor} ${textColor} ${
                             !quizAnswer ? "hover:border-white/30" : ""
                           }`}
@@ -536,7 +536,7 @@ export default function SlideViewer({ story }: { story: Story }) {
               <div
                 key={`completion-${pageIndex}`}
                 className="slide-item flex-shrink-0 w-full h-full relative flex flex-col items-center justify-center px-6"
-                style={{ background: "linear-gradient(135deg, #0d1117 0%, #1a1a2e 40%, #0f3460 100%)" }}
+                style={{ background: "linear-gradient(135deg, #000000 0%, #0F0F0F 40%, #1F1F1F 100%)" }}
               >
                 <div className="text-center max-w-sm">
                   {/* Checkmark with CSS bounce animation */}
@@ -557,7 +557,7 @@ export default function SlideViewer({ story }: { story: Story }) {
                   <p className="font-sans text-white/60 text-sm leading-relaxed mb-4">
                     {story.story_headline}
                   </p>
-                  <p className="font-sans text-white/50 text-sm mb-6">
+                  <p className="font-sans text-white/60 text-sm mb-6">
                     Read more stories on Newsreel
                   </p>
                   <a
@@ -572,6 +572,7 @@ export default function SlideViewer({ story }: { story: Story }) {
                   <br />
                   <button
                     onClick={handleShare}
+                    aria-label="Share this story"
                     className="inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-white/20 text-white/60 text-xs font-mono hover:text-white hover:border-white/40 transition-colors mb-4"
                   >
                     <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
@@ -580,8 +581,8 @@ export default function SlideViewer({ story }: { story: Story }) {
                     Share
                   </button>
                   {story.source_name && (
-                    <p className="font-mono text-[10px] text-white/30 tracking-wider">
-                      Created by {story.source_name} using Newsreel Transform
+                    <p className="font-mono text-[10px] text-white/60 tracking-wider">
+                      Created with Newsreel
                     </p>
                   )}
                 </div>
@@ -689,13 +690,14 @@ export default function SlideViewer({ story }: { story: Story }) {
           href="https://newsreel.co"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-mono text-[10px] text-nr-gray-400 tracking-wider hover:text-white transition-colors flex items-center gap-1.5"
+          className="font-mono text-[10px] text-nr-ash tracking-wider hover:text-white transition-colors flex items-center gap-1.5"
         >
           <div className="w-3.5 h-3.5 rounded-sm bg-nr-red flex items-center justify-center font-heading text-[6px] text-white">N</div>
           Read on <span className="text-nr-red">Newsreel</span>
         </a>
         <button
           onClick={handleShare}
+          aria-label="Share this story"
           className="flex items-center gap-1.5 text-xs font-mono text-white/60 hover:text-white transition-all"
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">

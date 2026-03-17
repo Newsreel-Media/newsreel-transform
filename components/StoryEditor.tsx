@@ -53,14 +53,12 @@ type EditMode = null | "photo" | "text" | "record" | "chart"
 
 // ─── Constants ───────────────────────────────────────────────────────
 const GRADIENTS = [
-  "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
-  "linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)",
-  "linear-gradient(135deg, #1a0a2e 0%, #3d1f5c 50%, #1a1a2e 100%)",
-  "linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%)",
-  "linear-gradient(135deg, #1e1e2f 0%, #2d1b4e 50%, #1a1a2e 100%)",
-  "linear-gradient(135deg, #0a0a1a 0%, #1a2a3a 50%, #0a1a2a 100%)",
-  "linear-gradient(135deg, #111827 0%, #1f2937 50%, #111827 100%)",
-  "linear-gradient(135deg, #1a1a2e 0%, #2a1a3e 50%, #1a0a2e 100%)",
+  "linear-gradient(135deg, #000000 0%, #0F0F0F 50%, #1F1F1F 100%)",
+  "linear-gradient(135deg, #0F0F0F 0%, #1F1F1F 50%, #0F0F0F 100%)",
+  "linear-gradient(135deg, #1F1F1F 0%, #0F0F0F 50%, #000000 100%)",
+  "linear-gradient(135deg, #000000 0%, #1F1F1F 50%, #3A3A3A 100%)",
+  "linear-gradient(135deg, #0F0F0F 0%, #3A3A3A 50%, #1F1F1F 100%)",
+  "linear-gradient(135deg, #1F1F1F 0%, #000000 50%, #0F0F0F 100%)",
 ]
 
 function getIcon(subheadline: string): string {
@@ -226,7 +224,7 @@ function PhotoSearchOverlay({
         )}
 
         {results.length === 0 && !loading && query && (
-          <p className="text-white/30 text-xs font-mono text-center py-2">
+          <p className="text-white/60 text-xs font-mono text-center py-2">
             Hit enter or tap search to find photos
           </p>
         )}
@@ -242,7 +240,7 @@ function StatCard({ stat }: { stat: StatOverlay }) {
       <div className="glass-card rounded-2xl p-6 text-center max-w-[280px] pointer-events-auto">
         <p className="font-heading text-4xl text-white mb-2">{stat.value}</p>
         <p className="font-sans text-white/80 text-sm leading-relaxed mb-2">{stat.label}</p>
-        <p className="font-mono text-[10px] text-white/40 uppercase tracking-wider">{stat.source}</p>
+        <p className="font-mono text-[10px] text-white/60 uppercase tracking-wider">{stat.source}</p>
       </div>
     </div>
   )
@@ -735,18 +733,29 @@ export default function StoryEditor({
             setShowToolbar((t) => !t)
             if (showToolbar) setEditMode(null)
           }}
-          className={`font-mono text-[11px] px-2 py-1 rounded-full transition-all min-h-[28px] ${
+          aria-label="Edit story"
+          className={`font-mono text-[13px] px-3 py-1.5 rounded-full transition-all min-h-[32px] flex items-center gap-1.5 ${
             showToolbar
               ? "bg-nr-red/30 text-nr-red border border-nr-red/40"
-              : "bg-black/40 backdrop-blur-sm text-white/50 hover:text-white/80"
+              : "bg-black/50 backdrop-blur-sm text-white/70 border border-white/20 hover:text-white hover:border-white/40"
           }`}
         >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M10.08 1.92a1.5 1.5 0 012.12 0l.88.88a1.5 1.5 0 010 2.12L5.5 12.5 1.5 13l.5-4 8.08-7.08z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
           {showToolbar ? "Editing" : "Edit"}
         </button>
         <span className="font-mono text-[11px] text-white/50 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-full">
           {currentSlide + 1} of {totalPages}
         </span>
       </div>
+
+      {/* Edit hint on first load */}
+      {!showToolbar && currentSlide === 0 && (
+        <div className="absolute bottom-[52px] left-0 right-0 z-10 text-center pointer-events-none">
+          <p className="font-mono text-[11px] text-white/50">Tap Edit to customize photos and text</p>
+        </div>
+      )}
 
       {/* Chart modal */}
       {showChartModal && (
@@ -851,10 +860,10 @@ export default function StoryEditor({
                   />
                   {/* Swipe hint */}
                   <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-[10px] text-white/40 uppercase tracking-wider">
+                    <span className="font-mono text-[10px] text-white/60 uppercase tracking-wider">
                       Swipe to read
                     </span>
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-white/40">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-white/60">
                       <path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </div>
@@ -1023,6 +1032,7 @@ export default function StoryEditor({
                             <button
                               onClick={() => !quizAnswer && setQuizAnswer(key)}
                               disabled={!!quizAnswer}
+                              aria-label={quiz.answers[key]}
                               className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-sans ${borderColor} ${bgColor} ${textColor} ${
                                 !quizAnswer ? "hover:border-white/30" : ""
                               }`}
@@ -1155,10 +1165,10 @@ export default function StoryEditor({
               <div
                 key={`sponsored-${pageIndex}`}
                 className="slide-item flex-shrink-0 w-full h-full relative flex flex-col items-center justify-center px-6"
-                style={{ background: "linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%)" }}
+                style={{ background: "linear-gradient(135deg, #000000 0%, #0F0F0F 50%, #000000 100%)" }}
               >
                 <div className="w-full max-w-sm">
-                  <p className="font-mono text-[10px] text-white/40 uppercase tracking-widest mb-6 text-center">
+                  <p className="font-mono text-[10px] text-white/60 uppercase tracking-widest mb-6 text-center">
                     Sponsored
                   </p>
                   <div className="glass-card rounded-2xl p-6 text-center">
@@ -1193,7 +1203,7 @@ export default function StoryEditor({
               <div
                 key={`completion-${pageIndex}`}
                 className="slide-item flex-shrink-0 w-full h-full relative flex flex-col items-center justify-center px-6"
-                style={{ background: "linear-gradient(135deg, #0d1117 0%, #1a1a2e 40%, #0f3460 100%)" }}
+                style={{ background: "linear-gradient(135deg, #000000 0%, #0F0F0F 40%, #1F1F1F 100%)" }}
               >
                 <div className="text-center max-w-sm">
                   <div
@@ -1228,6 +1238,7 @@ export default function StoryEditor({
                   <br />
                   <button
                     onClick={handleShare}
+                    aria-label="Share this story"
                     className="inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-white/20 text-white/60 text-xs font-mono hover:text-white hover:border-white/40 transition-colors mb-4"
                   >
                     <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
@@ -1236,8 +1247,8 @@ export default function StoryEditor({
                     Share
                   </button>
                   {story.source_name && (
-                    <p className="font-mono text-[10px] text-white/30 tracking-wider">
-                      Created by {story.source_name} using Newsreel Transform
+                    <p className="font-mono text-[10px] text-white/60 tracking-wider">
+                      Created with Newsreel
                     </p>
                   )}
                 </div>
@@ -1427,13 +1438,14 @@ export default function StoryEditor({
           href="https://newsreel.co"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-mono text-[10px] text-nr-gray-400 tracking-wider hover:text-white transition-colors flex items-center gap-1.5"
+          className="font-mono text-[10px] text-nr-ash tracking-wider hover:text-white transition-colors flex items-center gap-1.5"
         >
           <div className="w-3.5 h-3.5 rounded-sm bg-nr-red flex items-center justify-center font-heading text-[6px] text-white">N</div>
           Read on <span className="text-nr-red">Newsreel</span>
         </a>
         <button
           onClick={handleShare}
+          aria-label="Share this story"
           className="flex items-center gap-1.5 text-xs font-mono text-white/60 hover:text-white transition-all"
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
