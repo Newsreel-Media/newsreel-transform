@@ -1089,7 +1089,7 @@ export default function StoryEditor({
 
                 {/* PiP video overlay */}
                 {slideVideos[0] && (
-                  <div className="absolute bottom-[140px] right-4 z-20 w-[120px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
+                  <div className="absolute bottom-[160px] right-4 z-20 w-[120px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
                     <video
                       src={slideVideos[0]}
                       autoPlay
@@ -1099,12 +1099,16 @@ export default function StoryEditor({
                       className="w-full h-full object-cover"
                     />
                     <button
-                      onClick={() => setSlideVideos(prev => {
-                        const next = { ...prev }
-                        delete next[0]
-                        return next
-                      })}
-                      className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-black/80 border border-white/20 flex items-center justify-center text-white/70 hover:text-white z-30"
+                      onClick={() => {
+                        const url = slideVideos[0]
+                        if (url) URL.revokeObjectURL(url)
+                        setSlideVideos(prev => {
+                          const next = { ...prev }
+                          delete next[0]
+                          return next
+                        })
+                      }}
+                      className="absolute top-1 right-1 w-8 h-8 min-w-[44px] min-h-[44px] rounded-full bg-black/80 border border-white/20 flex items-center justify-center text-white/70 hover:text-white z-30"
                     >
                       <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                         <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -1662,7 +1666,7 @@ export default function StoryEditor({
 
               {/* PiP video overlay */}
               {slideVideos[slideIndex] && (
-                <div className="absolute bottom-[140px] right-4 z-20 w-[120px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
+                <div className="absolute bottom-[160px] right-4 z-20 w-[120px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
                   <video
                     src={slideVideos[slideIndex]}
                     autoPlay
@@ -1672,12 +1676,16 @@ export default function StoryEditor({
                     className="w-full h-full object-cover"
                   />
                   <button
-                    onClick={() => setSlideVideos(prev => {
-                      const next = { ...prev }
-                      delete next[slideIndex]
-                      return next
-                    })}
-                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-black/80 border border-white/20 flex items-center justify-center text-white/70 hover:text-white z-30"
+                    onClick={() => {
+                      const url = slideVideos[slideIndex]
+                      if (url) URL.revokeObjectURL(url)
+                      setSlideVideos(prev => {
+                        const next = { ...prev }
+                        delete next[slideIndex]
+                        return next
+                      })
+                    }}
+                    className="absolute top-1 right-1 w-8 h-8 min-w-[44px] min-h-[44px] rounded-full bg-black/80 border border-white/20 flex items-center justify-center text-white/70 hover:text-white z-30"
                   >
                     <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                       <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -1829,7 +1837,7 @@ export default function StoryEditor({
             const url = URL.createObjectURL(file)
             if (currentSlideIndex !== undefined) {
               setSlideVideos(prev => ({ ...prev, [currentSlideIndex]: url }))
-              setSlideMediaTypes(prev => ({ ...prev, [currentSlideIndex]: 'video' }))
+              // Do NOT set slideMediaTypes — PiP video is separate from slide background
             }
             setShowRecorder(false)
           }}
