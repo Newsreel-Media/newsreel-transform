@@ -135,9 +135,9 @@ async function extractWithHybrid(
   if (firecrawlKey) {
     try {
       const firecrawl = new FirecrawlApp({ apiKey: firecrawlKey })
-      const result = await firecrawl.scrapeUrl(url, { formats: ["markdown"] })
+      const result = await firecrawl.scrape(url, { formats: ["markdown"] })
 
-      if (result.success && result.markdown && result.markdown.length > 200) {
+      if (result.markdown && result.markdown.length > 200) {
         const fcTitle = (result.metadata?.title as string) || tier1Result.title || ""
         const fcSiteName = (result.metadata?.ogSiteName as string) || tier1Result.siteName || ""
         return {
