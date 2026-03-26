@@ -34,11 +34,13 @@ TRIGGER WARNINGS:
 - If the topic involves sensitive content (violence, suicide, sexual assault, etc.), the FIRST slide must be a trigger warning.
 - For trigger warning slides, use "Content warning" as the subheadline.
 
-QUICK POLL:
-- Always generate a quick_poll: a "this or that" opinion question related to the story
-- The question should be a genuine debate point, not a factual question
-- option_a and option_b should be short (under 6 words each), representing two sides
-- Example: "Should cities ban e-scooters?" / "Yes, too dangerous" / "No, they reduce traffic"
+POLL (LIKERT SCALE):
+- Always generate a poll: an opinion-based question asking readers "Where do you stand?"
+- The question should be directly based on the story's topic and implications
+- Provide exactly 5 Likert scale options representing a spectrum of perspectives
+- Example topic: "AI regulation" → Question: "Where do you stand on AI regulation in the workplace?"
+- Options should span from one extreme to the other (e.g., Strongly Disagree → Strongly Agree)
+- Keep options concise and clear, avoiding ambiguity
 
 QUIZ:
 - Always generate a quiz at the end
@@ -102,10 +104,15 @@ Return valid JSON with this exact structure:
     "question": "Before you read: what do you think about [topic]?",
     "options": ["Option 1", "Option 2", "Option 3"]
   },
-  "quick_poll": {
-    "question": "A concise this-or-that opinion question related to the story",
-    "option_a": "Short position A",
-    "option_b": "Short position B"
+  "poll": {
+    "question": "Where do you stand on [specific topic from story]?",
+    "options": [
+      "Strongly Disagree",
+      "Disagree",
+      "Neutral",
+      "Agree",
+      "Strongly Agree"
+    ]
   }
 }
 
@@ -336,7 +343,7 @@ CRITICAL RULES:
 - Slide 1 must use "The hook" key phrase
 - Each remaining slide uses a DIFFERENT key phrase from the list
 - Each slide body is 1-2 sentences with real substance
-- Include a quiz, a guess question, and a quick_poll
+- Include a quiz, a guess question, and a poll (Likert scale, 5 options, "Where do you stand?" framing)
 - Return ONLY valid JSON`
 
     // Call Claude with a 30-second timeout
