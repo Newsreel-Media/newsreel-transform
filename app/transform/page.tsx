@@ -2,7 +2,9 @@
 
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState, useRef, Suspense } from "react"
+import Lottie from "lottie-react"
 import StoryEditor from "@/components/StoryEditor"
+import animationData from "@/public/animations/animation_clipped.json"
 
 function slugify(text: string): string {
   return text
@@ -135,8 +137,8 @@ function TransformContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center px-6">
-        <div className="w-12 h-12 rounded-2xl bg-nr-red/20 flex items-center justify-center mb-6 animate-pulse-glow">
-          <div className="w-6 h-6 rounded-lg bg-nr-red" />
+        <div className="w-60 h-60 mb-6 mt-20">
+          <Lottie animationData={animationData} loop autoplay />
         </div>
         <h2 className="font-heading text-xl text-white mb-2">{loadingMessage}</h2>
         <p className="text-nr-ash text-sm font-sans text-center max-w-sm">
@@ -446,8 +448,8 @@ export default function TransformPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-12 h-12 rounded-2xl bg-nr-red/20 flex items-center justify-center animate-pulse-glow">
-          <div className="w-6 h-6 rounded-lg bg-nr-red" />
+        <div className="w-12 h-12">
+          <Lottie animationData={animationData} loop autoplay />
         </div>
       </div>
     }>
