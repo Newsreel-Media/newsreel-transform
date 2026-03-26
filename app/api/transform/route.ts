@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
+import FirecrawlApp from "firecrawl"
 
 const SYSTEM_PROMPT = `You are a Newsreel story writer. You write stories in AP Style for a mobile news app called Newsreel. Your stories are structured as slide-based briefs.
 
@@ -110,8 +111,45 @@ Return valid JSON with this exact structure:
 
 IMPORTANT: Return ONLY valid JSON. No markdown, no code fences, no explanation.`
 
-// Article text extraction - regex-based, no external dependencies
-function extractArticleText(html: string): { title: string; text: string; siteName: string } {
+// Hybrid extraction: Regex (instant) → Firecrawl (robust) → Regex fallback
+async function extractWithHybrid(
+  url: string,
+  html: string
+): Promise<{ title: string; text: string; siteName: string }> {
+  // --- TIER 1: Original regex extraction (instant, free, local) ---
+  const tier1Result = extractArticleTextLegacy(html)
+  if (tier1Result.text && tier1Result.text.length > 400) {
+    // Good enough, return immediately
+    return tier1Result
+  }
+
+  // --- TIER 2: Firecrawl (paid fallback, handles JS-heavy/complex sites) ---
+  const firecrawlKey = process.env.FIRECRAWL_API_KEY
+  if (firecrawlKey) {
+    try {
+      const firecrawl = new FirecrawlApp({ apiKey: firecrawlKey })
+      const result = await firecrawl.scrapeUrl(url, { formats: ["markdown"] })
+
+      if (result.success && result.markdown && result.markdown.length > 200) {
+        const fcTitle = (result.metadata?.title as string) || tier1Result.title || ""
+        const fcSiteName = (result.metadata?.ogSiteName as string) || tier1Result.siteName || ""
+        return {
+          title: fcTitle,
+          text: result.markdown.slice(0, 5000),
+          siteName: fcSiteName,
+        }
+      }
+    } catch {
+      // Firecrawl failed, return Tier 1 result (already extracted above)
+    }
+  }
+
+  // --- TIER 3: Return best-effort from Tier 1 ---
+  return tier1Result
+}
+
+// Original regex-based extraction - kept as emergency fallback
+function extractArticleTextLegacy(html: string): { title: string; text: string; siteName: string } {
   // Extract title
   let title = ""
   const ogTitle = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i)
@@ -270,7 +308,7 @@ export async function POST(request: NextRequest) {
     }
 
     const html = await articleResponse.text()
-    const { title, text, siteName } = extractArticleText(html)
+    const { title, text, siteName } = await extractWithHybrid(url, html)
 
     if (!text || text.length < 50) {
       return NextResponse.json(
