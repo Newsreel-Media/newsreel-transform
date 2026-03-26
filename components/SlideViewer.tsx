@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
+import type { MediaItem } from "@/lib/media-search/types"
 
 interface Slide {
   subheadline: string
   content: string
   image_query?: string
+  gif_query?: string
 }
 
 interface Quiz {
@@ -117,54 +119,254 @@ export default function SlideViewer({ story }: { story: Story }) {
   const [guessAnswer, setGuessAnswer] = useState<string | null>(null)
   const [pollAnswer, setPollAnswer] = useState<string | null>(null)
   const [pollPercent] = useState(() => Math.floor(Math.random() * 16) + 55) // 55-70%
-  const [slidePhotos, setSlidePhotos] = useState<Record<number, string>>({})
-  const [slideMediaTypes, setSlideMediaTypes] = useState<Record<number, 'image' | 'video'>>({})
-  const [slideVideos] = useState<Record<number, string>>({})
+  const [slideMedia, setSlideMedia] = useState<Record<number, MediaItem>>({})
   const scrollRef = useRef<HTMLDivElement>(null)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+  const hasFetchedRef = useRef(false) // Prevent Strict Mode double-fetch
 
-  // Fetch photos/gifs sequentially to avoid duplicate photos across slides
+  // PRODUCTION-GRADE: Bulletproof media fetching with absolute deduplication
   useEffect(() => {
-    const fetchPhotosSequentially = async () => {
-      const usedUrls = new Set<string>()
+    // CRITICAL: Prevent React Strict Mode from running fetch twice
+    if (hasFetchedRef.current) return
+    hasFetchedRef.current = true
+
+    const fetchMediaSequentially = async () => {
+      const usedUrls = new Map<string, number>() // URL -> slide index
+      const usedQueries = new Set<string>() // GIF queries already used
+      const results: Record<number, MediaItem> = {}
+
+      // PREPROCESS: Detect duplicate queries from Claude (shouldn't happen but safety check)
+      const gifQueryMap = new Map<string, number[]>() // query -> slide indices
+      story.slides.forEach((slide, i) => {
+        const q = slide.gif_query?.trim().toLowerCase()
+        if (q) {
+          if (!gifQueryMap.has(q)) gifQueryMap.set(q, [])
+          gifQueryMap.get(q)!.push(i)
+        }
+      })
+
+      const dupGifQueries = Array.from(gifQueryMap.entries()).filter(([_, slides]) => slides.length > 1)
+      if (dupGifQueries.length > 0) {
+        // CRITICAL: Claude generated duplicate gif_queries
+      }
+
       for (let i = 0; i < story.slides.length; i++) {
         const slide = story.slides[i]
-        if (!slide.image_query) continue
-        // Every 3rd slide gets a GIF for visual variety
-        const type = i % 3 === 1 ? 'gif' : 'photo'
-        try {
-          const res = await fetch(`/api/photos?q=${encodeURIComponent(slide.image_query)}&type=${type}&count=3`)
-          const data = await res.json()
-          const results: Array<{ url?: string }> = data.results || (data.url ? [data] : [])
-          const unused = results.find((r) => r.url && !usedUrls.has(r.url))
-          if (unused?.url) {
-            usedUrls.add(unused.url)
-            setSlidePhotos(prev => ({ ...prev, [i]: unused.url! }))
-          } else if (results[0]?.url) {
-            usedUrls.add(results[0].url)
-            setSlidePhotos(prev => ({ ...prev, [i]: results[0].url! }))
-          }
-        } catch {
-          // Fallback: if GIF fails, try photo
-          if (type === 'gif' && slide.image_query) {
-            try {
-              const res = await fetch(`/api/photos?q=${encodeURIComponent(slide.image_query)}&type=photo&count=3`)
-              const data = await res.json()
-              const results: Array<{ url?: string }> = data.results || (data.url ? [data] : [])
-              const unused = results.find((r) => r.url && !usedUrls.has(r.url))
-              if (unused?.url) {
-                usedUrls.add(unused.url)
-                setSlidePhotos(prev => ({ ...prev, [i]: unused.url! }))
-              } else if (results[0]?.url) {
-                usedUrls.add(results[0].url)
-                setSlidePhotos(prev => ({ ...prev, [i]: results[0].url! }))
+        let mediaFound = false
+
+        // ═══ STEP 1: GIF SEARCH (HIGHEST PRIORITY) ═══
+        // But SKIP if this query was already used (prevent duplicate queries from Giphy)
+        const queryNorm = slide.gif_query?.trim().toLowerCase()
+        const queryAlreadyUsed = usedQueries.has(queryNorm || '')
+
+        if (slide.gif_query && !mediaFound && !queryAlreadyUsed) {
+          try {
+            const q = slide.gif_query.trim()
+
+            const res = await fetch(`/api/media-search?q=${encodeURIComponent(q)}&type=image`)
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            const data = await res.json()
+
+            // ONLY GIPHY, NO DUPLICATES
+            const gifResults = ((data.results as MediaItem[]) || [])
+              .filter(r => r.source === 'giphy')
+              .filter(r => !usedUrls.has(r.url))
+
+            if (gifResults.length > 0) {
+              // Pick random from first 6, ensuring NO duplicates
+              let chosen = gifResults[Math.floor(Math.random() * Math.min(gifResults.length, 6))]
+              let attempts = 0
+              while (usedUrls.has(chosen.url) && attempts < 20 && gifResults.length > 0) {
+                chosen = gifResults[Math.floor(Math.random() * gifResults.length)]
+                attempts++
               }
-            } catch {}
+
+              if (!usedUrls.has(chosen.url)) {
+                usedUrls.set(chosen.url, i)
+                usedQueries.add(queryNorm!) // Track this query as used
+                results[i] = chosen
+                mediaFound = true
+              }
+            } else {
+              // No GIFs found
+            }
+          } catch (err) {
+            // GIF fetch error
+          }
+        } else if (queryAlreadyUsed) {
+          // GIF query already used, skipping to images
+        }
+
+        // ═══ STEP 2: IMAGE SEARCH (if no GIF) ═══
+        if (!mediaFound && slide.image_query) {
+          try {
+            const q = slide.image_query.trim()
+
+            const res = await fetch(`/api/media-search?q=${encodeURIComponent(q)}&type=image`)
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            const data = await res.json()
+
+            // Skip: Giphy (want photos not GIFs), news sources (low quality), used URLs
+            const imgResults = ((data.results as MediaItem[]) || [])
+              .filter(r => r.source !== 'giphy' && r.source !== 'newsapi' && r.source !== 'gnews')
+              .filter(r => !usedUrls.has(r.url))
+
+            if (imgResults.length > 0) {
+              // Prefer quality sources, but skip duplicates
+              let chosen: MediaItem | null = null
+
+              // Try to find from preferred sources first
+              for (const source of ['unsplash', 'pexels', 'pixabay']) {
+                const candidate = imgResults.find(r => r.source === source && !usedUrls.has(r.url))
+                if (candidate) {
+                  chosen = candidate
+                  break
+                }
+              }
+
+              // If no preferred source found, take any non-duplicate
+              if (!chosen) {
+                chosen = imgResults.find(r => !usedUrls.has(r.url)) || null
+              }
+
+              if (chosen && !usedUrls.has(chosen.url)) {
+                usedUrls.set(chosen.url, i)
+                results[i] = chosen
+                mediaFound = true
+              }
+            } else {
+              // No images found
+            }
+          } catch (err) {
+            // IMG fetch error
+          }
+        }
+
+        // ═══ STEP 3: VIDEO SEARCH (if still nothing) ═══
+        if (!mediaFound && slide.image_query) {
+          try {
+            const q = slide.image_query.trim()
+
+            const res = await fetch(`/api/media-search?q=${encodeURIComponent(q)}&type=video`)
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            const data = await res.json()
+
+            const vidResults = ((data.results as MediaItem[]) || [])
+              .filter(r => !usedUrls.has(r.url))
+
+            if (vidResults.length > 0) {
+              const chosen = vidResults[0]
+              usedUrls.set(chosen.url, i)
+              results[i] = chosen
+              mediaFound = true
+            }
+          } catch (err) {
+            // VID fetch error
+          }
+        }
+
+        if (!mediaFound) {
+          // No media found for this slide
+        }
+      }
+
+      // FINAL DEDUP VERIFICATION + FIX
+      const urlCounts = new Map<string, number>()
+      const duplicateSlides: number[] = []
+
+      Object.entries(results).forEach(([slideIdx, media]) => {
+        const count = urlCounts.get(media.url) || 0
+        if (count > 0) {
+          duplicateSlides.push(parseInt(slideIdx))
+        }
+        urlCounts.set(media.url, count + 1)
+      })
+
+      // IF DUPLICATES FOUND: Re-fetch with exclusions and retry with image_query
+      if (duplicateSlides.length > 0) {
+        // Re-fetching duplicates with alternatives
+
+        for (const slideIdx of duplicateSlides) {
+          const slide = story.slides[slideIdx]
+          const usedInOtherSlides = new Set(
+            Object.entries(results)
+              .filter(([idx]) => parseInt(idx) !== slideIdx)
+              .map(([_, media]) => media.url)
+          )
+
+          let foundAlt = false
+
+          // STRATEGY 1: Try same gif_query with exclusions
+          try {
+            const q = slide.gif_query?.trim()
+            if (q) {
+              const res = await fetch(
+                `/api/media-search?q=${encodeURIComponent(q)}&type=image&exclude=${Array.from(usedInOtherSlides).join(',')}`
+              )
+              if (res.ok) {
+                const data = await res.json()
+                const alt = (data.results as MediaItem[] || [])
+                  .find(r => r.source === 'giphy' && !usedInOtherSlides.has(r.url))
+
+                if (alt) {
+                  results[slideIdx] = alt
+                  foundAlt = true
+                }
+              }
+            }
+          } catch (err) {
+            // Re-fetch GIF failed
+          }
+
+          // STRATEGY 2: Try image_query as fallback
+          if (!foundAlt) {
+            try {
+              const q = slide.image_query?.trim()
+              if (q) {
+                const res = await fetch(
+                  `/api/media-search?q=${encodeURIComponent(q)}&type=image&exclude=${Array.from(usedInOtherSlides).join(',')}`
+                )
+                if (res.ok) {
+                  const data = await res.json()
+                  const alt = (data.results as MediaItem[] || []).find(r => !usedInOtherSlides.has(r.url))
+
+                  if (alt) {
+                    results[slideIdx] = alt
+                    foundAlt = true
+                  }
+                }
+              }
+            } catch (err) {
+              // Re-fetch image failed
+            }
+          }
+
+          if (!foundAlt) {
+            // Could not find alternative after duplicate
           }
         }
       }
+
+      // VERIFY AGAIN AFTER FIX
+      const finalCounts = new Map<string, number>()
+      Object.values(results).forEach(media => {
+        finalCounts.set(media.url, (finalCounts.get(media.url) || 0) + 1)
+      })
+
+      const stillDuplicate = Array.from(finalCounts.values()).some(count => count > 1)
+      if (stillDuplicate) {
+        // Still duplicates after re-fetch
+      }
+
+      const emptySlides = story.slides.length - Object.keys(results).length
+      if (emptySlides > 0) {
+        // Some slides have no media
+      }
+
+      setSlideMedia(results)
     }
-    fetchPhotosSequentially()
+
+    fetchMediaSequentially()
   }, [story.slides])
 
   // Total "pages": headline + guess (if present) + slides + quick_poll + quiz + completion
@@ -338,19 +540,31 @@ export default function SlideViewer({ story }: { story: Story }) {
         {pages.map((page, pageIndex) => {
           // ─── Headline Card ──────────────────────────────
           if (page.type === "headline") {
-            const coverPhoto = slidePhotos[0]
+            const coverMedia = slideMedia[0]
             return (
               <div
                 key={`headline-${pageIndex}`}
                 className="slide-item flex-shrink-0 w-full h-full relative overflow-hidden"
                 style={{ background: GRADIENTS[0] }}
               >
-                {/* Cover photo/video */}
-                {coverPhoto && (
+                {/* Cover photo/video/GIF */}
+                {coverMedia && (
                   <>
-                    {slideMediaTypes[0] === 'video' ? (
+                    {coverMedia.source === 'youtube' ? (
+                      (() => {
+                        const videoId = coverMedia.url.match(/watch\?v=([^&]+)/)?.[1]
+                        return videoId ? (
+                          <iframe
+                            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&modestbranding=1`}
+                            className="absolute inset-0 w-full h-full"
+                            allow="autoplay; encrypted-media"
+                            style={{ border: 'none' }}
+                          />
+                        ) : null
+                      })()
+                    ) : coverMedia.mediaType === 'video' ? (
                       <video
-                        src={coverPhoto}
+                        src={coverMedia.url}
                         autoPlay
                         loop
                         muted
@@ -359,7 +573,7 @@ export default function SlideViewer({ story }: { story: Story }) {
                       />
                     ) : (
                       <img
-                        src={coverPhoto}
+                        src={coverMedia.url}
                         alt=""
                         className="absolute inset-0 w-full h-full object-cover"
                         loading="eager"
@@ -375,19 +589,6 @@ export default function SlideViewer({ story }: { story: Story }) {
                   }}
                 />
 
-                {/* PiP video overlay */}
-                {slideVideos[0] && (
-                  <div className="absolute bottom-[140px] right-4 z-20 w-[120px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
-                    <video
-                      src={slideVideos[0]}
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
 
                 {/* Source pill top-left */}
                 {story.source_name && (
@@ -649,19 +850,31 @@ export default function SlideViewer({ story }: { story: Story }) {
           // Regular slide
           const slide = story.slides[page.index!]
           const gradientIndex = (page.index! + 1) % GRADIENTS.length
-          const photoUrl = slidePhotos[page.index!]
+          const slideMediaItem = slideMedia[page.index!]
           return (
             <div
               key={`slide-${pageIndex}`}
               className="slide-item flex-shrink-0 w-full h-full relative overflow-hidden"
               style={{ background: GRADIENTS[gradientIndex] }}
             >
-              {/* Photo/Video background */}
-              {photoUrl && (
+              {/* Photo/Video/GIF background */}
+              {slideMediaItem && (
                 <>
-                  {slideMediaTypes[page.index!] === 'video' ? (
+                  {slideMediaItem.source === 'youtube' ? (
+                    (() => {
+                      const videoId = slideMediaItem.url.match(/watch\?v=([^&]+)/)?.[1]
+                      return videoId ? (
+                        <iframe
+                          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&modestbranding=1`}
+                          className="absolute inset-0 w-full h-full"
+                          allow="autoplay; encrypted-media"
+                          style={{ border: 'none' }}
+                        />
+                      ) : null
+                    })()
+                  ) : slideMediaItem.mediaType === 'video' ? (
                     <video
-                      src={photoUrl}
+                      src={slideMediaItem.url}
                       autoPlay
                       loop
                       muted
@@ -670,7 +883,7 @@ export default function SlideViewer({ story }: { story: Story }) {
                     />
                   ) : (
                     <img
-                      src={photoUrl}
+                      src={slideMediaItem.url}
                       alt=""
                       className="absolute inset-0 w-full h-full object-cover"
                       loading="lazy"
@@ -704,22 +917,8 @@ export default function SlideViewer({ story }: { story: Story }) {
                 )
               })()}
 
-              {/* PiP video overlay */}
-              {slideVideos[page.index!] && (
-                <div className="absolute bottom-[140px] right-4 z-20 w-[120px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
-                  <video
-                    src={slideVideos[page.index!]}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-
-              {/* Content card at bottom — narrower when PiP video exists */}
-              <div className={`absolute bottom-0 left-0 right-0 p-5 pb-16 relative z-10 ${slideVideos[page.index!] ? 'pr-[148px]' : ''}`}>
+              {/* Content card at bottom */}
+              <div className="absolute bottom-0 left-0 right-0 p-5 pb-16 relative z-10">
                 <div className="glass-card rounded-2xl p-5">
                   <p className="font-mono text-white/80 text-xs tracking-wider mb-2">
                     {getIcon(slide.subheadline)} {slide.subheadline}

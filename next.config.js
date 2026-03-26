@@ -5,6 +5,7 @@ const nextConfig = {
       { protocol: "https", hostname: "**" },
     ],
   },
+  staticDirs: ["./assets"],
 }
 
 module.exports = nextConfig
