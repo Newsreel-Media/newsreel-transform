@@ -37,9 +37,9 @@ export default function Home() {
           <Image
             src="/assets/white.png"
             alt="Newsreel"
-            width={64}
+            width={140}
             height={28}
-            className="w-16 h-7"
+            className="h-7 w-auto"
           />
           <span className="font-heading text-white text-lg">Transform</span>
         </div>
@@ -124,9 +124,9 @@ export default function Home() {
           Made by <Image
             src="/assets/white.png"
             alt="Newsreel"
-            width={40}
+            width={80}
             height={16}
-            className="w-10 h-4"
+            className="h-4 w-auto"
           />
         </p>
       </footer>
