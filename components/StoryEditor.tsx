@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import dynamic from "next/dynamic"
+import type { MediaItem } from "@/lib/media-search/types"
+import { SOURCE_LABELS } from "@/lib/media-search/types"
 
 const AuthorVideoRecorder = dynamic(
   () => import("./AuthorVideoRecorder").then(m => ({ default: m.AuthorVideoRecorder })),
@@ -134,9 +136,10 @@ function PhotoSearchOverlay({
   onClose: () => void
 }) {
   const [query, setQuery] = useState(defaultQuery)
-  const [results, setResults] = useState<Array<{ url: string; thumbnail: string }>>([])
+  const [results, setResults] = useState<MediaItem[]>([])
   const [loading, setLoading] = useState(false)
   const [mobileTab, setMobileTab] = useState<"search" | "upload">("search")
+  const [mediaType, setMediaType] = useState<'image' | 'video'>('image')
   const inputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -150,8 +153,8 @@ function PhotoSearchOverlay({
     const file = e.target.files?.[0]
     if (file) {
       const objectUrl = URL.createObjectURL(file)
-      const mediaType = file.type.startsWith('video/') ? 'video' as const : 'image' as const
-      onSelect(objectUrl, mediaType)
+      const type = file.type.startsWith('video/') ? 'video' as const : 'image' as const
+      onSelect(objectUrl, type)
     }
   }
 
@@ -159,17 +162,20 @@ function PhotoSearchOverlay({
     if (!query.trim()) return
     setLoading(true)
     try {
-      const res = await fetch(`/api/photos?q=${encodeURIComponent(query)}&type=photo&count=8`)
+      const res = await fetch(
+        `/api/media-search?q=${encodeURIComponent(query)}&type=${mediaType}`
+      )
       const data = await res.json()
       setResults(data.results || [])
-    } catch {
+    } catch (err) {
+      console.error('Search error:', err)
       setResults([])
     } finally {
       setLoading(false)
     }
-  }, [query])
+  }, [query, mediaType])
 
-  // Auto-search on mount if defaultQuery is non-empty
+  // Auto-search on mount
   useEffect(() => {
     if (defaultQuery.trim() && !hasMountSearched.current) {
       hasMountSearched.current = true
@@ -187,13 +193,23 @@ function PhotoSearchOverlay({
     if (e.key === "Escape") {
       onClose()
     }
-    // Stop keyboard nav from firing
     e.stopPropagation()
+  }
+
+  const handleSelectMedia = (item: MediaItem) => {
+    onSelect(item.url, item.mediaType)
+  }
+
+  const formatDuration = (seconds: number | null) => {
+    if (!seconds) return ''
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
   return (
     <>
-      {/* Hidden file input for upload */}
+      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -202,23 +218,33 @@ function PhotoSearchOverlay({
         onChange={handleFileUpload}
       />
 
-      {/* Mobile: full-screen fixed modal */}
+      {/* Mobile view */}
       <div
         className="sm:hidden fixed inset-0 z-50 bg-black/95 flex flex-col"
         style={{ height: "100dvh", paddingBottom: "env(safe-area-inset-bottom)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Tab toggle: Search | Upload */}
+        {/* Top tabs */}
         <div className="flex border-b border-white/10 bg-black pt-[max(8px,env(safe-area-inset-top))]">
           <button
-            onClick={() => setMobileTab("search")}
+            onClick={() => { setMobileTab("search"); setMediaType('image') }}
             className={`flex-1 py-2.5 text-sm font-mono tracking-wider transition-colors ${
-              mobileTab === "search"
+              mobileTab === "search" && mediaType === 'image'
                 ? "text-white border-b-2 border-nr-red"
                 : "text-white/40 hover:text-white/60"
             }`}
           >
-            Search
+            Images
+          </button>
+          <button
+            onClick={() => { setMobileTab("search"); setMediaType('video') }}
+            className={`flex-1 py-2.5 text-sm font-mono tracking-wider transition-colors ${
+              mobileTab === "search" && mediaType === 'video'
+                ? "text-white border-b-2 border-nr-red"
+                : "text-white/40 hover:text-white/60"
+            }`}
+          >
+            Videos
           </button>
           <button
             onClick={() => setMobileTab("upload")}
@@ -242,7 +268,7 @@ function PhotoSearchOverlay({
 
         {mobileTab === "search" ? (
           <>
-            {/* Header with search input */}
+            {/* Search input */}
             <div className="flex items-center gap-2 p-3 border-b border-white/10 bg-black">
               <input
                 ref={inputRef}
@@ -250,7 +276,7 @@ function PhotoSearchOverlay({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Search photos..."
+                placeholder="Search photos, GIFs, videos..."
                 className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-white/40"
               />
               <button
@@ -270,36 +296,47 @@ function PhotoSearchOverlay({
               </button>
             </div>
 
-            {/* Results grid - scrollable area fills remaining space */}
+            {/* Results grid */}
             <div className="flex-1 overflow-y-auto p-3">
               {results.length > 0 && (
                 <div className="grid grid-cols-3 gap-2">
-                  {results.map((r, i) => (
+                  {results.map((item, i) => (
                     <button
                       key={i}
-                      onClick={() => onSelect(r.url)}
-                      className="aspect-square rounded-lg overflow-hidden hover:ring-2 hover:ring-nr-red transition-all"
+                      onClick={() => handleSelectMedia(item)}
+                      className="aspect-square rounded-lg overflow-hidden hover:ring-2 hover:ring-nr-red transition-all relative group"
                     >
                       <img
-                        src={r.thumbnail}
+                        src={item.thumbnail}
                         alt=""
                         className="w-full h-full object-cover"
                         loading="lazy"
                       />
+                      {/* Source badge */}
+                      <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded font-mono">
+                          {SOURCE_LABELS[item.source]}
+                        </span>
+                      </div>
+                      {/* Duration badge for videos */}
+                      {item.duration && (
+                        <div className="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded font-mono">
+                          {formatDuration(item.duration)}
+                        </div>
+                      )}
                     </button>
                   ))}
                 </div>
               )}
-
               {results.length === 0 && !loading && query && (
                 <p className="text-white/60 text-xs font-mono text-center py-8">
-                  Hit enter or tap search to find photos
+                  No {mediaType}s found. Try a different search.
                 </p>
               )}
             </div>
           </>
         ) : (
-          /* Upload tab content */
+          /* Upload tab */
           <div className="flex-1 flex flex-col items-center justify-center p-6">
             <button
               onClick={() => fileInputRef.current?.click()}
@@ -310,23 +347,23 @@ function PhotoSearchOverlay({
                 <polyline points="17,8 12,3 7,8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 <line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              <span className="text-white/70 text-sm font-mono">Tap to upload a photo or video</span>
+              <span className="text-white/70 text-sm font-mono">Tap to upload</span>
               <span className="text-white/30 text-xs font-mono">JPG, PNG, GIF, WebP, MP4, MOV</span>
             </button>
           </div>
         )}
       </div>
 
-      {/* Desktop (sm+): inline overlay at top of slide */}
+      {/* Desktop view */}
       <div className="hidden sm:block absolute inset-x-0 top-0 z-50 p-3" onClick={(e) => e.stopPropagation()}>
-        <div className="glass-card rounded-xl p-3">
-          <div className="flex items-center gap-2 mb-1">
+        <div className="glass-card rounded-xl p-3 max-w-lg">
+          <div className="flex items-center gap-2 mb-2">
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Search photos..."
+              placeholder="Search photos, GIFs, videos..."
               className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-white/40"
             />
             <button
@@ -354,40 +391,70 @@ function PhotoSearchOverlay({
             </button>
           </div>
 
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="text-white/40 hover:text-white/70 text-xs font-mono mb-2 flex items-center gap-1 transition-colors"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <polyline points="17,8 12,3 7,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            or upload
-          </button>
+          {/* Type toggle */}
+          <div className="flex gap-2 mb-2">
+            <button
+              onClick={() => { setMediaType('image'); setResults([]) }}
+              className={`px-3 py-1.5 text-xs font-mono rounded-lg transition-colors ${
+                mediaType === 'image'
+                  ? 'bg-nr-red text-white'
+                  : 'bg-white/10 text-white/60 hover:text-white'
+              }`}
+            >
+              Images & GIFs
+            </button>
+            <button
+              onClick={() => { setMediaType('video'); setResults([]) }}
+              className={`px-3 py-1.5 text-xs font-mono rounded-lg transition-colors ${
+                mediaType === 'video'
+                  ? 'bg-nr-red text-white'
+                  : 'bg-white/10 text-white/60 hover:text-white'
+              }`}
+            >
+              Videos
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="px-3 py-1.5 text-xs font-mono text-white/60 hover:text-white transition-colors"
+            >
+              Upload
+            </button>
+          </div>
 
+          {/* Results grid */}
           {results.length > 0 && (
             <div className="grid grid-cols-4 gap-1.5 max-h-[160px] overflow-y-auto">
-              {results.map((r, i) => (
+              {results.map((item, i) => (
                 <button
                   key={i}
-                  onClick={() => onSelect(r.url)}
-                  className="aspect-square rounded-lg overflow-hidden hover:ring-2 hover:ring-nr-red transition-all"
+                  onClick={() => handleSelectMedia(item)}
+                  className="aspect-square rounded-lg overflow-hidden hover:ring-2 hover:ring-nr-red transition-all relative group"
                 >
                   <img
-                    src={r.thumbnail}
+                    src={item.thumbnail}
                     alt=""
                     className="w-full h-full object-cover"
                     loading="lazy"
                   />
+                  {/* Source badge */}
+                  <div className="absolute top-0.5 left-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="bg-black/70 text-white text-[7px] px-1 py-0.5 rounded font-mono whitespace-nowrap">
+                      {SOURCE_LABELS[item.source]}
+                    </span>
+                  </div>
+                  {/* Duration */}
+                  {item.duration && (
+                    <div className="absolute bottom-0.5 right-0.5 bg-black/70 text-white text-[7px] px-1 py-0.5 rounded font-mono">
+                      {formatDuration(item.duration)}
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
           )}
-
           {results.length === 0 && !loading && query && (
             <p className="text-white/60 text-xs font-mono text-center py-2">
-              Hit enter or tap search to find photos
+              No {mediaType}s found
             </p>
           )}
         </div>
@@ -724,41 +791,56 @@ export default function StoryEditor({
   )
 
   // Fetch photos sequentially to avoid duplicate photos across slides
+  const hasFetchedPhotosRef = useRef(false) // Prevent Strict Mode double-fetch
   useEffect(() => {
+    // CRITICAL: Prevent React Strict Mode from running fetch twice
+    if (hasFetchedPhotosRef.current) return
+    hasFetchedPhotosRef.current = true
+
     const fetchPhotosSequentially = async () => {
       const usedUrls = new Set<string>()
+      const usedQueries = new Set<string>()
+
+      // FIRST: Fetch headline photo (stored at slidePhotos[0])
+      try {
+        const headlineQuery = story.story_headline || story.subhead
+        const res = await fetch(`/api/media-search?q=${encodeURIComponent(headlineQuery)}&mode=auto`)
+        const data = await res.json()
+        const item = data.item
+        if (item?.url) {
+          usedUrls.add(item.url)
+          usedQueries.add(headlineQuery.trim().toLowerCase())
+          setSlidePhotos((prev) => ({ ...prev, [0]: item.url }))
+        }
+      } catch (err) {
+        // Silently fail for headline photo
+      }
+
+      // THEN: Fetch slide photos starting from slidePhotos[1]
       for (let i = 0; i < story.slides.length; i++) {
         const slide = story.slides[i]
         if (!slide.image_query) continue
-        const type = i % 3 === 1 ? "gif" : "photo"
+
+        // SKIP if this query was already used
+        const queryNorm = slide.image_query.trim().toLowerCase()
+        if (usedQueries.has(queryNorm)) {
+          continue
+        }
+
         try {
-          const res = await fetch(`/api/photos?q=${encodeURIComponent(slide.image_query)}&type=${type}&count=3`)
+          // Use new media-search with auto mode (GIF > image > video)
+          const res = await fetch(`/api/media-search?q=${encodeURIComponent(slide.image_query)}&mode=auto`)
           const data = await res.json()
-          const results: Array<{ url?: string }> = data.results || (data.url ? [data] : [])
-          const unused = results.find((r) => r.url && !usedUrls.has(r.url))
-          if (unused?.url) {
-            usedUrls.add(unused.url)
-            setSlidePhotos((prev) => ({ ...prev, [i]: unused.url! }))
-          } else if (results[0]?.url) {
-            usedUrls.add(results[0].url)
-            setSlidePhotos((prev) => ({ ...prev, [i]: results[0].url! }))
+          const item = data.item
+          if (item?.url && !usedUrls.has(item.url)) {
+            usedUrls.add(item.url)
+            usedQueries.add(queryNorm)
+            // Store at slidePhotos[i+1] because slidePhotos[0] is headline
+            const photoIndex = i + 1
+            setSlidePhotos((prev) => ({ ...prev, [photoIndex]: item.url }))
           }
-        } catch {
-          if (type === "gif" && slide.image_query) {
-            try {
-              const res = await fetch(`/api/photos?q=${encodeURIComponent(slide.image_query)}&type=photo&count=3`)
-              const data = await res.json()
-              const results: Array<{ url?: string }> = data.results || (data.url ? [data] : [])
-              const unused = results.find((r) => r.url && !usedUrls.has(r.url))
-              if (unused?.url) {
-                usedUrls.add(unused.url)
-                setSlidePhotos((prev) => ({ ...prev, [i]: unused.url! }))
-              } else if (results[0]?.url) {
-                usedUrls.add(results[0].url)
-                setSlidePhotos((prev) => ({ ...prev, [i]: results[0].url! }))
-              }
-            } catch {}
-          }
+        } catch (err) {
+          // Silently fail for individual slide photos
         }
       }
     }
@@ -1551,7 +1633,8 @@ export default function StoryEditor({
           const slideIndex = page.index!
           const slide = story.slides[slideIndex]
           const gradientIndex = (slideIndex + 1) % GRADIENTS.length
-          const photoUrl = slidePhotos[slideIndex]
+          // slidePhotos[0] is headline, so slides are stored at [1], [2], etc.
+          const photoUrl = slidePhotos[slideIndex + 1]
           const stat = slideStats[slideIndex]
 
           return (
@@ -1563,7 +1646,7 @@ export default function StoryEditor({
               {/* Photo/Video background */}
               {photoUrl && (
                 <>
-                  {slideMediaTypes[slideIndex] === 'video' ? (
+                  {slideMediaTypes[slideIndex + 1] === 'video' ? (
                     <video
                       src={photoUrl}
                       autoPlay
@@ -1583,6 +1666,8 @@ export default function StoryEditor({
                     <img
                       src={photoUrl}
                       alt=""
+                      data-slide-index={slideIndex}
+                      data-photo-url={photoUrl}
                       className={`absolute inset-0 w-full h-full object-cover ${
                         showToolbar && editMode === "photo" ? "cursor-pointer" : ""
                       }`}
@@ -1638,7 +1723,7 @@ export default function StoryEditor({
               {photoSearchSlide === slideIndex && (
                 <PhotoSearchOverlay
                   defaultQuery={slide.image_query || ""}
-                  onSelect={(url, mediaType) => handlePhotoSelect(slideIndex, url, mediaType)}
+                  onSelect={(url, mediaType) => handlePhotoSelect(slideIndex + 1, url, mediaType)}
                   onClose={() => setPhotoSearchSlide(null)}
                 />
               )}
@@ -1830,7 +1915,7 @@ export default function StoryEditor({
         <AuthorVideoRecorder
           backgroundUrl={
             currentSlideIndex !== undefined
-              ? slidePhotos[currentSlideIndex]
+              ? slidePhotos[currentSlideIndex + 1]
               : undefined
           }
           onRecordingComplete={(file) => {

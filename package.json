@@ -5,15 +5,19 @@
   "scripts": {
     "dev": "next dev -p 3006",
     "build": "next build",
-    "start": "next start -p 3006"
+    "start": "next start"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "@mediapipe/camera_utils": "^0.3.1675466862",
     "@mediapipe/selfie_segmentation": "^0.1.1675465747",
+    "@mozilla/readability": "^0.6.0",
+    "firecrawl": "^4.18.0",
+    "lottie-react": "^2.4.1",
     "next": "14.2.21",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "undici": "^6.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

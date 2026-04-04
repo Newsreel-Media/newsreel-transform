@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
+import FirecrawlApp from "firecrawl"
 
 const SYSTEM_PROMPT = `You are a Newsreel story writer. You write stories in AP Style for a mobile news app called Newsreel. Your stories are structured as slide-based briefs.
 
@@ -24,16 +25,22 @@ STORY STRUCTURE:
   * "Food for thought" - An insight for deeper reflection
   * "Tangent" - A related but tangential point
 - Use varied key phrases across slides. Don't repeat the same phrase.
+- CRITICAL: Each slide MUST have a UNIQUE gif_query and image_query. NEVER repeat any query.
+  * If you used "robot" for slide 1, you CANNOT use "robot" for slide 2,3,4,5...
+  * If you used "computer" for slide 2, use "laptop" or "office" or "coding" for another tech slide
+  * GENERATE COMPLETELY DIFFERENT QUERIES FOR EACH SLIDE. This is non-negotiable.
 
 TRIGGER WARNINGS:
 - If the topic involves sensitive content (violence, suicide, sexual assault, etc.), the FIRST slide must be a trigger warning.
 - For trigger warning slides, use "Content warning" as the subheadline.
 
-QUICK POLL:
-- Always generate a quick_poll: a "this or that" opinion question related to the story
-- The question should be a genuine debate point, not a factual question
-- option_a and option_b should be short (under 6 words each), representing two sides
-- Example: "Should cities ban e-scooters?" / "Yes, too dangerous" / "No, they reduce traffic"
+POLL (LIKERT SCALE):
+- Always generate a poll: an opinion-based question asking readers "Where do you stand?"
+- The question should be directly based on the story's topic and implications
+- Provide exactly 5 Likert scale options representing a spectrum of perspectives
+- Example topic: "AI regulation" → Question: "Where do you stand on AI regulation in the workplace?"
+- Options should span from one extreme to the other (e.g., Strongly Disagree → Strongly Agree)
+- Keep options concise and clear, avoiding ambiguity
 
 QUIZ:
 - Always generate a quiz at the end
@@ -43,10 +50,31 @@ QUIZ:
 - Mark which answer is correct using the correct_answer field (a, b, c, or d)
 
 IMAGE QUERIES:
-- For each slide, provide an image_query: a short search phrase (2-4 words) for a Creative Commons photo search.
-- Use concrete, visual nouns (people, places, objects) not abstract concepts.
-- Example: Instead of "economic uncertainty" use "stock exchange trading floor". Instead of "political tension" use "US Capitol building".
-- Each query should describe something a photographer could actually photograph.
+CRITICAL: Read the slide CONTENT carefully. Generate SPECIFIC, SEARCHABLE queries.
+- "gif_query": SPECIFIC TERMS (1-3 words) that return GREAT GIFs
+  - Think: what real thing/person/event would GIFs show?
+  - Read: "Stock prices plummeted" → gif_query: "stock market crash"
+  - Read: "FDA approves medicine" → gif_query: "celebration cheering"
+  - Read: "Court case lost" → gif_query: "disappointed sad"
+  - Read: "Tech released" → gif_query: "excited happy"
+  - Read: "AI breakthrough" → gif_query: "robot learning"
+  Examples: Trump, celebration, disappointed, running, dancing, laughing, excited, sad, angry, shocked, confused, party, winning, losing, surprised, amazed, explosion, fire, crash, jump, jump up, fist bump, high five
+  - Must be CONCRETE and SEARCHABLE (what would you type in Giphy search bar?)
+
+- "image_query": ONE specific object/place (1-2 words)
+  - Read: "Tesla stock" → "Tesla"
+  - Read: "Weather disaster" → "hurricane"
+  - Read: "Victory" → "trophy"
+  Examples: courtroom, office, smartphone, trophy, hurricane, stadium, robot, brain, building, crowd
+
+RULES:
+- gif_query: 1-3 words, SPECIFIC and SEARCHABLE (would "stock market crash" find great GIFs? YES)
+- image_query: 1-2 words, concrete object/place
+- NEVER abstract: "sadness" BAD, "disappointed sad" GOOD
+- NEVER vague: "emotion" BAD, "celebration" GOOD
+- ABSOLUTELY: Each slide's gif_query MUST BE UNIQUE - never use same query twice
+- ABSOLUTELY: Each slide's image_query MUST BE UNIQUE - never use same query twice
+- If you used "college party" for slide 1, you CANNOT use it again for slide 3. Generate different queries.
 
 OUTPUT FORMAT:
 Return valid JSON with this exact structure:
@@ -58,7 +86,8 @@ Return valid JSON with this exact structure:
     {
       "subheadline": "The hook",
       "content": "One or two sentences max.",
-      "image_query": "relevant photo search terms"
+      "image_query": "concrete visual nouns for photos/videos",
+      "gif_query": "action words for animated GIFs"
     }
   ],
   "quiz": {
@@ -75,17 +104,59 @@ Return valid JSON with this exact structure:
     "question": "Before you read: what do you think about [topic]?",
     "options": ["Option 1", "Option 2", "Option 3"]
   },
-  "quick_poll": {
-    "question": "A concise this-or-that opinion question related to the story",
-    "option_a": "Short position A",
-    "option_b": "Short position B"
+  "poll": {
+    "question": "Where do you stand on [specific topic from story]?",
+    "options": [
+      "Strongly Disagree",
+      "Disagree",
+      "Neutral",
+      "Agree",
+      "Strongly Agree"
+    ]
   }
 }
 
 IMPORTANT: Return ONLY valid JSON. No markdown, no code fences, no explanation.`
 
-// Article text extraction - regex-based, no external dependencies
-function extractArticleText(html: string): { title: string; text: string; siteName: string } {
+// Hybrid extraction: Regex (instant) → Firecrawl (robust) → Regex fallback
+async function extractWithHybrid(
+  url: string,
+  html: string
+): Promise<{ title: string; text: string; siteName: string }> {
+  // --- TIER 1: Original regex extraction (instant, free, local) ---
+  const tier1Result = extractArticleTextLegacy(html)
+  if (tier1Result.text && tier1Result.text.length > 400) {
+    // Good enough, return immediately
+    return tier1Result
+  }
+
+  // --- TIER 2: Firecrawl (paid fallback, handles JS-heavy/complex sites) ---
+  const firecrawlKey = process.env.FIRECRAWL_API_KEY
+  if (firecrawlKey) {
+    try {
+      const firecrawl = new FirecrawlApp({ apiKey: firecrawlKey })
+      const result = await firecrawl.scrape(url, { formats: ["markdown"] })
+
+      if (result.markdown && result.markdown.length > 200) {
+        const fcTitle = (result.metadata?.title as string) || tier1Result.title || ""
+        const fcSiteName = (result.metadata?.ogSiteName as string) || tier1Result.siteName || ""
+        return {
+          title: fcTitle,
+          text: result.markdown.slice(0, 5000),
+          siteName: fcSiteName,
+        }
+      }
+    } catch {
+      // Firecrawl failed, return Tier 1 result (already extracted above)
+    }
+  }
+
+  // --- TIER 3: Return best-effort from Tier 1 ---
+  return tier1Result
+}
+
+// Original regex-based extraction - kept as emergency fallback
+function extractArticleTextLegacy(html: string): { title: string; text: string; siteName: string } {
   // Extract title
   let title = ""
   const ogTitle = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i)
@@ -244,7 +315,7 @@ export async function POST(request: NextRequest) {
     }
 
     const html = await articleResponse.text()
-    const { title, text, siteName } = extractArticleText(html)
+    const { title, text, siteName } = await extractWithHybrid(url, html)
 
     if (!text || text.length < 50) {
       return NextResponse.json(
@@ -272,7 +343,7 @@ CRITICAL RULES:
 - Slide 1 must use "The hook" key phrase
 - Each remaining slide uses a DIFFERENT key phrase from the list
 - Each slide body is 1-2 sentences with real substance
-- Include a quiz, a guess question, and a quick_poll
+- Include a quiz, a guess question, and a poll (Likert scale, 5 options, "Where do you stand?" framing)
 - Return ONLY valid JSON`
 
     // Call Claude with a 30-second timeout
@@ -320,11 +391,19 @@ CRITICAL RULES:
       )
     }
 
-    // Default missing image_query to the story headline
+    // ENSURE BOTH QUERIES are always present
     if (storyData.slides && Array.isArray(storyData.slides)) {
       for (const slide of storyData.slides) {
-        if (!slide.image_query) {
+        // Image query is mandatory
+        if (!slide.image_query || slide.image_query.trim().length === 0) {
           slide.image_query = storyData.story_headline || title || "news"
+        }
+        // GIF query is mandatory and MUST be different
+        if (!slide.gif_query || slide.gif_query.trim().length === 0) {
+          // Generate from content if not provided
+          const contentWords = slide.content.split(' ').filter((w: string) => w.length > 3)
+          const firstNoun = contentWords[0] || "celebration"
+          slide.gif_query = firstNoun
         }
       }
     }

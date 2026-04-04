@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 
 const EXAMPLE_URLS = [
   {
@@ -32,10 +33,14 @@ export default function Home() {
     <main className="min-h-screen bg-black">
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-nr-red flex items-center justify-center font-heading text-white text-sm">
-            N
-          </div>
+        <div className="flex items-center gap-3">
+          <Image
+            src="/assets/white.png"
+            alt="Newsreel"
+            width={140}
+            height={28}
+            className="h-7 w-auto"
+          />
           <span className="font-heading text-white text-lg">Transform</span>
         </div>
         <span className="text-xs font-mono text-nr-ash">Beta</span>
@@ -115,8 +120,14 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-white/10 py-6 text-center">
-        <p className="text-nr-steel text-sm font-mono">
-          Made by <span className="text-nr-red">Newsreel</span>
+        <p className="text-nr-steel text-sm font-mono flex items-center justify-center gap-2">
+          Made by <Image
+            src="/assets/white.png"
+            alt="Newsreel"
+            width={80}
+            height={16}
+            className="h-4 w-auto"
+          />
         </p>
       </footer>
     </main>

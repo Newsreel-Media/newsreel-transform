@@ -25,6 +25,9 @@ const ibmPlexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Newsreel Transform",
   description: "Turn any article into an interactive story",
+  icons: {
+    icon: "/assets/newsreel-icon.png",
+  },
 }
 
 export default function RootLayout({
